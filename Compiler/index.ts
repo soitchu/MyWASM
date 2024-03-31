@@ -1,27 +1,34 @@
-import { readFileSync } from "node:fs";
 import { StringBuffer } from "./StringBuffer.ts";
 import { Lexer } from "./Lexer.ts";
-import { TokenType } from "./types.ts";
 import { ASTParser } from "./AST.ts";
-import { PrintVisitor } from "./Printer.ts";
 import { SemanticChecker } from "./SemanticChecker.ts";
+import binaryenModule from "binaryen";
+import wabt from "wabt";
+import { readFileSync, writeFileSync } from "node:fs";
 
-let start = performance.now();
-const buffer = readFileSync("test.mypl", "utf-8");
-const a = new StringBuffer(buffer);
+export async function init(input: string, output: string, options) {
+  const lexer = new Lexer(new StringBuffer(readFileSync(input, "utf8")));
+  const ast = new ASTParser(lexer);
+  const program = ast.parse();
+  const codeGen = new SemanticChecker();
+  const wat = codeGen.visit_program(program) as string;
 
-const l = new Lexer(a);
+  const wabtModule = await wabt();
+  let wasmModuleBuffer = wabtModule
+    .parseWat("", wat, {
+      gc: true,
+    })
+    .toBinary({}).buffer;
 
-const ast = new ASTParser(l);
+  if (options.optimize) {
+    const wasmModule = binaryenModule.readBinary(wasmModuleBuffer);
+    binaryenModule.setFastMath(true);
+    binaryenModule.setOptimizeLevel(4);
+    binaryenModule.setShrinkLevel(0);
+    wasmModule.setFeatures(binaryenModule.Features.BulkMemory);
+    wasmModule.optimize();
+    wasmModuleBuffer = wasmModule.emitBinary();
+  }
 
-
-
-const b = ast.parse();
-const d = new SemanticChecker();
-d.visit_program(b);
-
-
-
-// console.log(b.fun_defs[0].stmts)
-// console.log(JSON.stringify(b.fun_defs, null, 4));
-
+  writeFileSync(output, wasmModuleBuffer);
+}

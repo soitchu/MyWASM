@@ -1,6 +1,6 @@
 import { MemoryManager } from "./MemoryManager.ts";
-import create from 'prompt-sync';
-const promptSync = create();
+import rl from "readline-sync";
+
 
 export interface testWasmExports extends WebAssembly.Exports {
     main: Function,
@@ -25,7 +25,7 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
             
             input: function () {
                 const exported = wasmModule.instance.exports as testWasmExports;
-                const input = promptSync("");
+                const input = rl.question("");
                 const stringPointer = exported.string_ini(input.length);
                 for (let i = 0; i < input.length; i++) {
                     exported.string_ini_assign(stringPointer, i, input.charCodeAt(i));

@@ -908,8 +908,7 @@ export class SemanticChecker extends Visitor{
         if(this.is_entry_file){
             this.core_functions += this.data_section
 
-            print(this.core_functions)
-            print(this.main_output)
+            return this.core_functions + this.main_output;
         }
     }
         
