@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": false,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "esModuleInterop": true,
+        "strict": true,
+    }
+}
