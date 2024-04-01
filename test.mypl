@@ -1,50 +1,71 @@
-struct Config {
-  double start;
-  double end;
-  double stepCount;
-  double step;
+function int randomInt(int start, int end) {
+  return dtoi(random() * itod(end - start + 1));
 }
 
-int max_iteration = 1000;
+function void merge(array int arr, int p, int q, int r, array int L, array int M) {
+  int n1 = q - (p - 1);
+  int n2 = r - q;
 
-export function void main() {
-  string box = "□";
-  string darkBox = "■";
-
-  string a = input();
-  Config configY = new Config((0.0 - 0.637), (0.0 - 0.6610), 50.0, null);
-  // Config configY = new Config((0.308), 0.370, 200.0, null);
-  configY.step = (configY.end - configY.start) / configY.stepCount;
-
-
-  Config configX = new Config((0.0 - 0.0473), (0.0 - 0.0146), 75.0, null);
-  // Config configX = new Config((0.360), 0.444, 500.0, null);
-  configX.step = (configX.end - configX.start) / configX.stepCount;
-
-  for(double y0 = configY.start; y0 > configY.end; y0 = y0 + configY.step) {
-    for(double x0 = configX.start; x0 < configX.end; x0 = x0 + configX.step) {
-      double x = 0.0;
-      double y = 0.0;
-      int iteration = 0;
-
-      while((((x * x) + (y * y)) <= 4.0) and (iteration < max_iteration)) {
-        double xtemp = ((x * x) - (y * y)) + x0;
-        y = (2.0 * x * y) + y0;
-        x = xtemp;
-        iteration = iteration + 1;
-      }
-
-      if(iteration == max_iteration) {
-        print(box);
-      } else {
-        print(darkBox);
-      }
-    }
-    print("\n");
+  for (int i = 0; i < n1; i = i + 1){
+    L[i] = arr[p + i];
   }
 
-  delete configY;
-  delete configX;
-  delete darkBox;
-  delete box;
+  for (int j = 0; j < n2; j = j + 1){
+    M[j] = arr[q + 1 + j];
+  }
+
+  int i = 0;
+  int j = 0;
+  int k = p;
+
+  while ((i < n1) and (j < n2)) {
+    if (L[i] <= M[j]) {
+      arr[k] = L[i];
+      i = i + 1;
+    } else {
+      arr[k] = M[j];
+      j = j + 1;
+    }
+    k = k + 1;
+  }
+
+  while (i < n1) {
+    arr[k] = L[i];
+    i = i + 1;
+    k = k + 1;
+  }
+
+  while (j < n2) {
+    arr[k] = M[j];
+    j = j + 1;
+    k = k + 1;
+  }
+}
+
+function void mergeSort(array int arr, int l, int r, array int L, array int M) {
+  if (l < r) {
+
+    int m = l + (r - l) / 2;
+
+    mergeSort(arr, l, m, L, M);
+    mergeSort(arr, m + 1, r, L, M);
+
+    merge(arr, l, m, r, L, M);
+  }
+}
+
+export function void main() {
+  int size = 10000000;
+  array int arr = new int[size];
+  array int L = new int[size];
+  array int M = new int[size];
+
+  for(int i = 0; i < size; i = i + 1){
+    arr[i] = randomInt(0, 10000);
+  }
+
+  mergeSort(arr, 0, size - 1, L, M);
+
+  delete_i32_array(L);
+  delete_i32_array(M);
 }
