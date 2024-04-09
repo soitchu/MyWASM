@@ -1,12 +1,12 @@
 import path from "node:path";
-import { Visitor } from "./Printer.ts";
-import { SymbolTable } from "./SymbolTable.ts";
-import * as ast from "./types.ts";
-import * as WASM from "./WasmHelper.ts";
+import { Visitor } from "./Printer";
+import { SymbolTable } from "./SymbolTable";
+import * as ast from "./types";
+import * as WASM from "./WasmHelper";
 import fs from "node:fs";
-import { Lexer } from "./Lexer.ts";
-import { ASTParser } from "./AST.ts";
-import { StringBuffer } from "./StringBuffer.ts";
+import { Lexer } from "./Lexer";
+import { ASTParser } from "./AST";
+import { StringBuffer } from "./StringBuffer";
 
 const STRICT_MODE = true;
 const UNSTRICT_MODE = false;
@@ -460,10 +460,16 @@ export class SemanticChecker extends Visitor{
         if(token === undefined){
             throw Error(msg);
         }
-        else{
-            const m = `${msg} at line ${token.line}, column ${token.column}`;
-            throw Error(m);
-        }
+
+        const semanticError = new Error(msg) as ast.MyWASMError;
+        const line = token.line;
+        const column = token.column;
+
+        semanticError.line = line;
+        semanticError.column = column;
+        semanticError.type = "Semantic";
+
+        throw semanticError;
     }
 
     match_type(expected: ast.DataType, actual: ast.DataType, strict_mode = true){
@@ -1724,7 +1730,9 @@ export class SemanticChecker extends Visitor{
         let array_type: ast.DataType | undefined = undefined;
         let should_store = true;
         let path_array: ast.VarRef[] = [];
-        
+        let was_struct = false;
+        let name: ast.Token | undefined;
+
         if(var_rvalue instanceof ast.VarRValue){
             path_array = var_rvalue.path
             should_store = false
@@ -1733,8 +1741,6 @@ export class SemanticChecker extends Visitor{
             path_array = var_rvalue.lvalue
         }    
         
-        let was_struct = false;
-        let name: ast.Token | undefined;
 
         for(const path of path_array){
             name = path.var_name

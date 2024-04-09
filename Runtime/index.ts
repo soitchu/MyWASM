@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import * as WASM from "./WASM.ts";
 
-export async function init(filename: string, debug: boolean) {
-    const wasmModuleBuffer = fs.readFileSync(filename);
+export async function init(filename: string, debug: boolean, wasmBuffer: Uint8Array) {
+    const wasmModuleBuffer = wasmBuffer === undefined ? fs.readFileSync(filename) : wasmBuffer;
 
     const memory = new WebAssembly.Memory({
         initial: 10000,

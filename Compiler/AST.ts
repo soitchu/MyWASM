@@ -1,7 +1,7 @@
-import { BUILT_INS } from "./WasmHelper.ts";
-import { Lexer } from "./Lexer.ts";
-import { SymbolTable } from "./SymbolTable.ts";
-import * as ast from "./types.ts";
+import { BUILT_INS } from "./WasmHelper";
+import { Lexer } from "./Lexer";
+import { SymbolTable } from "./SymbolTable";
+import * as ast from "./types";
 
 function empty_expr() {
     // @ts-expect-error
@@ -133,13 +133,16 @@ export class ASTParser {
     //----------------------------------------------------------------------
 
     error(message: string): never {
-        // TODO refine this
-        throw new Error(message);
-        // lexeme = this.curr_token.lexeme
-        // line = this.curr_token.line
-        // column = this.curr_token.column
-        // err_msg = f'{message} found "{lexeme}" at line {line}, column {column}'
-        // raise ParserError(err_msg)
+        const grammarError = new Error(message) as ast.MyWASMError;
+        const line = this.curr_token.line;
+        const column = this.curr_token.column;
+
+        grammarError.message += ` found ${this.curr_token.lexeme}`
+        grammarError.line = line;
+        grammarError.column = column;
+        grammarError.type = "Grammar";
+
+        throw grammarError;
     }
 
 

@@ -1,5 +1,5 @@
-import { StringBuffer } from "./StringBuffer.ts";
-import { Token, TokenType } from "./types.ts";
+import { StringBuffer } from "./StringBuffer";
+import { ErrorType, MyWASMError, Token, TokenType } from "./types";
 
 const single_char_map = {
     ".": TokenType.DOT,
@@ -100,7 +100,7 @@ export class Lexer {
     }
 
     isSpace(char: string) {
-        return char == " " || char == "\n";
+        return char == " " || char == "\n" || char == "\t";
     }
 
     is_valid_id(ch: string) {
@@ -108,7 +108,13 @@ export class Lexer {
     }
 
     error(message: string, line: number, column: number) {
-        throw Error(`${message} at line ${line}, column ${column}`)
+        const lexerError = new Error(message) as MyWASMError;
+        
+        lexerError.line = line;
+        lexerError.column = column;
+        lexerError.type = "Lexer";
+
+        throw lexerError;
     }
 
     handle_whitespaces() {

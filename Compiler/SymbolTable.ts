@@ -1,4 +1,4 @@
-import { DataType } from "./types.ts";
+import { DataType } from "./types";
 
 export class SymbolTable {
     environments: { [key: string]: DataType }[] = [];

@@ -1,5 +1,5 @@
-import { DataType, Token, TokenType } from "./types.ts";
-import * as ast from "./types.ts";
+import { DataType, Token, TokenType } from "./types";
+import * as ast from "./types";
 
 export const BUILT_INS = [
     'print', 'input', 'itos', 'itod', 'dtos', 'dtoi', 'stoi', 'stod',

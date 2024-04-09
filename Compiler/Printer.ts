@@ -1,4 +1,4 @@
-import { AssignStmt, CallExpr, ComplexTerm, DataType, DeleteStmt, Expr, ForStmt, FunDef, IfStmt, Import, NewRValue, Program, ReturnStmt, SimpleRValue, SimpleTerm, Stmt, StructDef, TokenType, VarDecl, VarDef, VarRValue, WhileStmt } from "./types.ts";
+import { AssignStmt, CallExpr, ComplexTerm, DataType, DeleteStmt, Expr, ForStmt, FunDef, IfStmt, Import, NewRValue, Program, ReturnStmt, SimpleRValue, SimpleTerm, Stmt, StructDef, TokenType, VarDecl, VarDef, VarRValue, WhileStmt } from "./types";
 
 export class Visitor {
     visit_program(program: Program) {}

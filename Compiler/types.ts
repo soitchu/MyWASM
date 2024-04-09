@@ -1,4 +1,16 @@
-import { PrintVisitor, Visitor } from "./Printer.ts";
+import { PrintVisitor, Visitor } from "./Printer";
+
+export enum ErrorType {
+    LEXER,
+    GRAMMAR,
+    SEMANTIC
+}
+
+export interface MyWASMError extends Error {
+    line: number;
+    column: number;
+    type: "Lexer" | "Grammar" | "Semantic"
+}
 
 export enum TokenType {
     EOS, ID, COMMENT,

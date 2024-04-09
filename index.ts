@@ -13,7 +13,7 @@ program
   .argument("<string>", "output; should be a .wasm file")
   .option("-O <number>", "level of optimization")
   .option("-S <number>", "shrink level")
-  .option("--fast-math", "allows \"loose\" math semantics")
+  .option("--fast-math", 'allows "loose" math semantics')
   .action(async (input: string, output: string, options) => {
     Compiler.init(input, output, options);
   });
@@ -23,8 +23,26 @@ program
   .description("Runs a MyWASM file")
   .argument("<string>", "input; should be a .wasm file")
   .option("--debug", "prints the time taken to execute and the memory")
+  .option("--compile", "compiles a .mypl file and then runs it")
   .action(async (input: string, config) => {
-    await Runtime.init(input, config.debug);
+    let wasmBuffer: Uint8Array | undefined;
+
+    if (config.compile) {
+      wasmBuffer = await Compiler.init(input, "", {
+        fastMath: false,
+        O: 4,
+        S: 0,
+        returnBuffer: true,
+      });
+    }
+
+    await Runtime.init(input, config.debug, wasmBuffer!);
   });
 
 program.parse();
+
+
+export {
+  Runtime,
+  Compiler
+};
