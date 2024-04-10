@@ -27,7 +27,9 @@ jobs:
             commands: |
               curl -fsSL https://bun.sh/install | bash
               export BUN_INSTALL="$HOME/.bun" 
-              export PATH=$BUN_INSTALL/bin:$PATH 
+              export PATH=$BUN_INSTALL/bin:$PATH
+              bun
+              bun install 
               ls
               make install
               make build
