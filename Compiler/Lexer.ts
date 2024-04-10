@@ -101,7 +101,7 @@ export class Lexer {
     }
 
     isSpace(char: string) {
-        return char == " " || char == EOL || char == "\t";
+        return char == " " || char == EOL || char == "\t" || char == "\r" || char == "\n";
     }
 
     is_valid_id(ch: string) {
