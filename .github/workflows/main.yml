@@ -26,13 +26,12 @@ jobs:
           with:
             commands: |
               curl -fsSL https://bun.sh/install | bash
-              export BUN_INSTALL="$HOME/.bun" 
-              export PATH=$BUN_INSTALL/bin:$PATH
-              bun
+              alias bun=~/.bun/bin/bun
               bun install 
               ls
-              make install
-              make build
+              cp ./Compiler/patches/binaryen.js ./node_modules/binaryen/index.js
+              cp ./Compiler/patches/wabt.js ./node_modules/wabt/index.js
+              bun build index.ts --compile --outfile mywasm
               ls
         
     
