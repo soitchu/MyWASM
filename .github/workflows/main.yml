@@ -1,0 +1,28 @@
+name: Build and release binaries
+on:
+  push:
+    branches: ["*"]
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "World"
+        default: "Hello"
+jobs:
+  build-x86:
+    environment: build
+    runs-on: ubuntu-latest
+    steps:
+        - name: Cloning the repo
+          uses: actions/checkout@v4
+
+        - name: Install bun
+          uses: oven-sh/setup-bun@v1
+          
+        - name: Install the modules
+          run: |
+            ls
+            make install
+            make build
+            ls
+        
+    
