@@ -25,6 +25,7 @@ jobs:
           uses: pguyot/arm-runner-action@v2
           with:
             commands: |
+              curl -fsSL https://bun.sh/install | bash
               ls
               make install
               make build
