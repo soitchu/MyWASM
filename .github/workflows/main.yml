@@ -9,8 +9,11 @@ on:
         default: "Hello"
 jobs:
   build-x86:
+    runs-on: ${{ matrix.os }}
     environment: build
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
     steps:
         - name: Cloning the repo
           uses: actions/checkout@v4
@@ -19,10 +22,12 @@ jobs:
           uses: oven-sh/setup-bun@v1
           
         - name: Install the modules
-          run: |
-            ls
-            make install
-            make build
-            ls
+          uses: pguyot/arm-runner-action@v2
+          with:
+            commands: |
+              ls
+              make install
+              make build
+              ls
         
     
