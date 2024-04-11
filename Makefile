@@ -2,7 +2,7 @@ build:
 	bun build index.ts --compile --outfile mywasm
 
 build-extension:
-	cp Compiler ./vscode-extension/server/src -r
+	cp Compiler ./mypl-vscode-extension/server/src -r
 	
 install:
 	bun install
