@@ -17,11 +17,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: mywasm-linux
-            asset_name: mywasm-linux
+            artifact_name: mywasm
+            asset_name: mywasm
           - os: windows-latest
-            artifact_name: mywasm-windows.exe
-            asset_name: mywasm-window.exe
+            artifact_name: mywasm.exe
+            asset_name: mywasm.exe
     steps:
         - name: Cloning the repo
           uses: actions/checkout@v4
@@ -34,8 +34,6 @@ jobs:
             ls
             make install
             make build
-            mv mywasm mywasm-linux || true
-            mv mywasm.exe mywasm-windows.exe || true
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
@@ -55,6 +53,12 @@ jobs:
           echo "SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
           ls -alh
           touch a.txt
+      
+      - name: Move binaries to the working directory
+        run: |
+          mv mywasm.exe/mywasm.exe ./mywasm-window-amd64.exe
+          mv mywasm/mywasm ./mywasm-linux-amd64
+          ls
 
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
@@ -62,8 +66,8 @@ jobs:
           tag_name: ${{ env.SHORT_SHA }}
           name: ${{ github.event.head_commit.message }}
           files: |
-            mywasm-windows.exe/mywasm-windows.exe
-            mywasm-linux/mywasm-linux
+            mywasm-window-amd64.exe
+            mywasm-linux-amd64
               
         
     
