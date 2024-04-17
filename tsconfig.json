@@ -1,9 +1,9 @@
 {
     "compilerOptions": {
-        "noImplicitAny": false,
+        "noImplicitAny": true,
         "module": "commonjs",
         "esModuleInterop": true,
-        "strict": true,
+        "strict": false,
         "lib": ["ES2021", "DOM", "ES2022"],
         "outDir": "./out",
     },
