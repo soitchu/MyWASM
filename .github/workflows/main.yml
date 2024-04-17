@@ -52,6 +52,7 @@ jobs:
         run: |
           echo "SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
           ls
+          touch a.txt
 
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
@@ -59,6 +60,7 @@ jobs:
           tag_name: ${{ env.SHORT_SHA }}
           name: ${{ github.event.head_commit.message }}
           files: |
+            a.txt
             MyWASM-linux-amd64
             MyWASM-windows-amd64.exe
               
