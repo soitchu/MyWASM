@@ -49,6 +49,8 @@ jobs:
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.sha }}
+          name: ${{ github.event.head_commit.message }}
           files: |
             MyWASM-linux-amd64
             MyWASM-windows-amd64.exe
