@@ -26,5 +26,6 @@ jobs:
             ls
             make install
             make build
+            ls
         
     
