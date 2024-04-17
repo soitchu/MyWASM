@@ -5,7 +5,7 @@ struct Config {
   double step;
 }
 
-int max_iteration = 1000;
+int max_iteration = 100;
 
 export function void main() {
   string box = "□";
