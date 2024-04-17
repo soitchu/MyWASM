@@ -13,7 +13,7 @@ jobs:
     environment: build
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
     steps:
         - name: Cloning the repo
           uses: actions/checkout@v4
@@ -22,16 +22,9 @@ jobs:
           uses: oven-sh/setup-bun@v1
           
         - name: Install the modules
-          uses: pguyot/arm-runner-action@v2
-          with:
-            commands: |
-              curl -fsSL https://bun.sh/install | bash
-              alias bun=~/.bun/bin/bun
-              bun install 
-              ls
-              cp ./Compiler/patches/binaryen.js ./node_modules/binaryen/index.js
-              cp ./Compiler/patches/wabt.js ./node_modules/wabt/index.js
-              bun build index.ts --compile --outfile mywasm
-              ls
+          run: |
+            ls
+            make install
+            make build
         
     
