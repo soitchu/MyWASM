@@ -51,7 +51,7 @@ jobs:
       - name: Add SHORT_SHA env property with commit short sha
         run: |
           echo "SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
-          ls
+          ls -alh
           touch a.txt
 
       - name: Upload binaries to release
@@ -60,8 +60,8 @@ jobs:
           tag_name: ${{ env.SHORT_SHA }}
           name: ${{ github.event.head_commit.message }}
           files: |
-            mywasm.exe
-            mywasm
+            mywasm.exe/mywasm.exe
+            mywasm/mywasm
               
         
     
