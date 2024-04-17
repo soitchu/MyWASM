@@ -51,13 +51,10 @@ jobs:
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
 
-      - name: test
-        run: ${{ env.SHORT_SHA }}
-        
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: $SHORT_SHA
+          tag_name: ${{ env.SHORT_SHA }}
           name: ${{ github.event.head_commit.message }}
           files: |
             MyWASM-linux-amd64
