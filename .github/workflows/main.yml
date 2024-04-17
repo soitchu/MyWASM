@@ -18,10 +18,10 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: mywasm
-            asset_name: ${{ github.event.repository.name }}-linux-amd64
+            asset_name: mywasm
           - os: windows-latest
             artifact_name: mywasm.exe
-            asset_name: ${{ github.event.repository.name }}-windows-amd64.exe
+            asset_name: mywasm.exe
     steps:
         - name: Cloning the repo
           uses: actions/checkout@v4
@@ -60,9 +60,8 @@ jobs:
           tag_name: ${{ env.SHORT_SHA }}
           name: ${{ github.event.head_commit.message }}
           files: |
-            a.txt
-            MyWASM-linux-amd64
-            MyWASM-windows-amd64.exe
+            mywasm.exe
+            mywasm
               
         
     
