@@ -17,11 +17,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: mywasm
-            asset_name: mywasm
+            artifact_name: mywasm-linux
+            asset_name: mywasm-linux
           - os: windows-latest
-            artifact_name: mywasm.exe
-            asset_name: mywasm.exe
+            artifact_name: mywasm-windows.exe
+            asset_name: mywasm-window.exe
     steps:
         - name: Cloning the repo
           uses: actions/checkout@v4
@@ -60,8 +60,8 @@ jobs:
           tag_name: ${{ env.SHORT_SHA }}
           name: ${{ github.event.head_commit.message }}
           files: |
-            mywasm.exe/mywasm.exe
-            mywasm/mywasm
+            mywasm-windows.exe/mywasm-windows.exe
+            mywasm-linux/mywasm-linux
               
         
     
