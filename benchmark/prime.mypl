@@ -1,5 +1,3 @@
-array int prime_list = null;
-
 function bool isPrime(int n) {
     if (n <= 1) {
         return false;
@@ -25,8 +23,7 @@ function bool isPrime(int n) {
 
 export function void main() {
     int len = 1000000;
-    prime_list = new int[len];
-
+    array int prime_list = new int[len];
     int count = 0;
     int n = 1;
 
@@ -38,5 +35,4 @@ export function void main() {
 
         n = n + 1;
     }
-
 }

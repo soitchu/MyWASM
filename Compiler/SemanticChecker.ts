@@ -1826,7 +1826,7 @@ export class SemanticChecker extends Visitor{
 
                     if(!was_struct){
                         if(name.lexeme in this.symbol_table.environments[0]){
-                            this.output_in_new_line(`global.get \$${name.lexeme}"`)
+                            this.output_in_new_line(`global.get \$${name.lexeme}`)
                         }
                         else{
                             this.output_in_new_line(`local.get \$${name.lexeme}`)

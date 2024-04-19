@@ -1,4 +1,14 @@
-Tables of Contents
+MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it compiles into WASM rather than having its own interpreter. And rather than leaking memory all over the place, MyWASM has a C-like memory management. MyWASM also has its own [LSP extension](https://marketplace.visualstudio.com/items?itemName=soitchu.mywasm) for VSCode.
+
+# Benchmarking
+MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. 
+
+Note: python was omitted since it was significantly slower than the other languages.
+
+
+# Design
+## Tables of Contents
+(#tables-of-contents)
 - [1.  Basics](#1--basics)
   - [1.1 Sizes](#11-sizes)
   - [1.2 Built-in functions](#12-built-in-functions)
