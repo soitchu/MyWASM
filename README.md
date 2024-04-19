@@ -27,7 +27,7 @@ Tables of Contents
     - [1.3.4 string](#134-string)
   - [1.4 Scope and local variables](#14-scope-and-local-variables)
 - [2. Memory Management](#2-memory-management)
-  - [2.1. WASM Garbage Collection Proposal](#21-wasm-garbage-collection-proposal)
+  - [2.1 WASM Garbage Collection Proposal](#21-wasm-garbage-collection-proposal)
   - [2.2 Built-in functions for Memory Management](#22-built-in-functions-for-memory-management)
   - [2.3 How deallocation works](#23-how-deallocation-works)
   - [2.4 How allocation works](#24-how-allocation-works)
@@ -65,53 +65,53 @@ There are two types of built-in functions in MyWASM:
 ### 1.2.1 WASM Built-ins functions 
 Functions  that are implemented in WASM itself:
 #### 1.2.1.1 itos
-	Signature: string itos(int num)
+**Signature: string itos(int num)**
 
 Converts an i32 value to a string.
 #### 1.2.1.2 itod
-Signature: double itod(int num)
+**Signature: double itod(int num)**
 
 Converts an i32  value to f64. This is implemented using f64.convert_i32_s.
 
 #### 1.2.1.3 dtos
-Signature: string itos(double num)
+**Signature: string itos(double num)**
 
-	Converts an f64 value to a string.
+Converts an f64 value to a string.
 
 #### 1.2.1.4 dtoi
-Signature: int dtoi(double num)
+**Signature: int dtoi(double num)**
 
 Converts an f64 value to i32. This is implemented using i32.trunc_f64_s.
 
 #### 1.2.1.5 stod
-Signature: double stod(string str)
+**Signature: double stod(string str)**
 
 Converts a string to an f64 value. 
 
 #### 1.2.1.6 stoi
-Signature: int stoi(string str)
+**Signature: int stoi(string str)**
 
 Converts a string to an i32 value. First the string is converted to f64 using stod, and then it is casted to i32.
 
 #### 1.2.1.7 length
-Signature: 
-int length(string str)
-int length(array <any_type> arr)
+**Signature:**<br/>
+**int length(string str)**<br/>
+**int length(array <any_type> arr)**
 
 The length of arrays are stored at arr[-1], where arr is the pointer to the array. So all length does is read arr[-1] and return the value. Since, as mentioned before, sizes are 32-bit integers, reading -1 index means 4 bits to the left, irrespective of the type of array. Strings are just arrays of i32 values, so the same function can be used without having to implement anything special for it.
 
 #### 1.2.1.8 get
-Signature: string get(int index, string str)
+**Signature: string get(int index, string str)**
 
 Returns the character at the ith index of a string. Since strings are just 	arrays of integers, all we need to do is str[i] and return the value.
 
 #### 1.2.1.9 string_ini
-Signature: int string_ini(int size)
+**Signature: int string_ini(int size)**
 
 Initializes a string and returns the pointer to it.
 
 #### 1.2.1.10 string_ini_assign
-Signature: int string_ini_assign(int str_ptr, int index, int value)
+**Signature: int string_ini_assign(int str_ptr, int index, int value)**
 
 Takes in the string pointer and the index, and assigns it the given value.
 
@@ -122,32 +122,32 @@ Note: there are other built-in functions that are used solely for internal usage
 Functions that need to be implemented by the host language due to technical limitations.
 
 #### 1.2.2.1 print
-Signature: void print(string str)
+**Signature: void print(string str)**
 
-WASM does not support basic I/O, so print needs to be implemented by the host language. When print is called, the pointer to the string is passed, which should then be used to print the string. When print is used with non-string values, then the value is casted to a string using the appropriate function mentioned in 1.2.1
+WASM does not support basic I/O, so print needs to be implemented by the host language. When print is called, the pointer to the string is passed, which should then be used to print the string. When print is used with non-string values, then the value is casted to a string using the appropriate function mentioned in [1.2.1](#121-wasm-built-ins-functions)
 
 #### 1.2.2.2 input
-Signature: string input()
+**Signature: string input()**
 
 The host language must take in the input from the user, then call string_ini to initiate the string, and then call string_ini_assign for each character of the string. Then it must return the pointer to the string that was returned from string_ini.
 		
 #### 1.2.2.3 allocate_memory
-Signature: int allocate_memory(int requestedSize)
+**Signature: int allocate_memory(int requestedSize)**
 
-Refer to 2.2
+Refer to [2.2](#22-built-in-functions-for-memory-management)
 
 #### 1.2.2.4 deallocate_memory
-Signature: void deallocate_memory(int index, int size)
+**Signature: void deallocate_memory(int index, int size)**
 
-Refer to 2.2
+Refer to [2.2](#22-built-in-functions-for-memory-management)
 
 #### 1.2.2.5 sleep
-Signature: void sleep(int ms)
+**Signature: void sleep(int ms)**
 
 Sleeps for ms milliseconds
 
 #### 1.2.2.6 random
-Signature: void random()
+**Signature: void random()**
 
 Returns a random f64 between 0 (inclusive) and 1 (exclusive)
 
@@ -162,7 +162,7 @@ WASM has native support for doubles: f64.
 WASM does not support int8, and neither does it support int16 (https://github.com/WebAssembly/design/issues/85), so i32 are used to store bool.
 
 ### 1.3.4 string
-The way strings are implemented is rather complex to fit in this section, so refer to section 5.
+The way strings are implemented is rather complex to fit in this section, so refer to section [5](#5-strings).
 
 
 Note: Since pointers are ints, i32 is used for arrays, structs and strings.
@@ -223,7 +223,7 @@ Transformed code:
 
 	
 # 2. Memory Management
-## 2.1. WASM Garbage Collection Proposal
+## 2.1 WASM Garbage Collection Proposal
 
 I could have used WASM’s instructions for garbage collection, essentially giving me an option to not have to implement any kind of memory management. However, the GC proposal (https://github.com/WebAssembly/gc) is really new and it was hard to find a compiler that would allow compiling WebAssembly Text (WAT) to its binary format. And as far as I know, stable versions of most WASM runtimes don’t even support the GC opcodes yet. So, I decided to implement my own memory management, which was way more fun than using native opcodes.
 
@@ -249,7 +249,7 @@ When size bits are requested, the smallest size greater than or equal to size is
 
 ## 2.5 Null Values
 
-Since WASM does not have an explicit null value, the 0th index of the linear memory is used as null. This means that global_offset begins with the default value of 4. The first 4 bytes of the linear memory must always be 0. It is important to note here that global_offset may not always begin at 4 due to string pooling. Refer to 5.2.2 and 6.1 to know more.
+Since WASM does not have an explicit null value, the 0th index of the linear memory is used as null. This means that global_offset begins with the default value of 4. The first 4 bytes of the linear memory must always be 0. It is important to note here that global_offset may not always begin at 4 due to string pooling. Refer to [5.2.2](#522-how) and [6.1](#61-string-pooling-and-imports) to know more.
 
 # 3. Struct
 
@@ -318,7 +318,7 @@ If MyWASM were to use string_ini to initiate the string, and then call string_in
 ### 5.2.2. How?
 The string is converted to binary during compilation. It is iterated, and each character is converted to a hex bytestring of length 8. It is highly important to note that WASM is [little-endian](https://github.com/WebAssembly/design/issues/1212), and thus the bytestring must be in little-endian as well.
 
-The bytestring in the data_section is copied to WASM’s linear memory. Thus, it means that global_offset must be incremented to reflect this. The offset of a particular string literal is stored by the compiler and reused whenever the string literal is referenced. Since MyWASM supports imports, we also need to consider other files’ global_offset. Refer to 6.1 to know more.
+The bytestring in the data_section is copied to WASM’s linear memory. Thus, it means that global_offset must be incremented to reflect this. The offset of a particular string literal is stored by the compiler and reused whenever the string literal is referenced. Since MyWASM supports imports, we also need to consider other files’ global_offset. Refer to [6.1](#61-string-pooling-and-imports) to know more.
 
 
 ## 5.3 When are strings copied?
@@ -347,7 +347,7 @@ When concatenating two strings, the length of string is added and then an approp
 
 ### 5.4.2 Potential problems with string concatenation
 
-Other than the problem mentioned in 5.3, string concatenation is probably what makes strings trickier than other base types. At first, I considered not supporting string concatenation at all, since it was really easy to leak memory. For example, consider the following code:
+Other than the problem mentioned in [5.3](#53-when-are-strings-copied), string concatenation is probably what makes strings trickier than other base types. At first, I considered not supporting string concatenation at all, since it was really easy to leak memory. For example, consider the following code:
 
     string a = “hello”;
     a = a + “ world”;
@@ -365,7 +365,7 @@ This is not ideal, however, there are three alternatives I could think of: eithe
 Since strings are just int arrays, we can just use the same method to delete it.
 
 # 6. Imports and Namespaces
-Namespaces are implemented using a similar technique mentioned in 1.4. Prefixes are used to differentiate between different namespaces’ functions and structs. 
+Namespaces are implemented using a similar technique mentioned in [1.4](#14-scope-and-local-variables). Prefixes are used to differentiate between different namespaces’ functions and structs. 
 
 To import a file and give it a namespace, we just need to write the following code:
 
