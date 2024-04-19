@@ -14,6 +14,7 @@ program
   .option("-O <number>", "level of optimization")
   .option("-S <number>", "shrink level")
   .option("--fast-math", 'allows "loose" math semantics')
+  .option("--unsafe-array", 'Disables null and bound checking')
   .action(async (input: string, output: string, options) => {
     Compiler.init(input, output, options);
   });
@@ -33,6 +34,7 @@ program
         O: 4,
         S: 0,
         returnBuffer: true,
+        unsafeArray: false
       });
     }
 

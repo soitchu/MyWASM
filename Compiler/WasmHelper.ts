@@ -2,184 +2,215 @@ import { DataType, Token, TokenType } from "./types";
 import * as ast from "./types";
 
 export const BUILT_INS = [
-    'print', 'input', 'itos', 'itod', 'dtos', 'dtoi', 'stoi', 'stod',
-    'length', 'get',
-    'allocate_memory', 'mem_copy', 'get_array_pointer', 'array_int_to_string', 'string_to_array_int',
-    'error', 'deallocate_memory', 'delete_i32_array', 'delete_string', 'i32_load', 'i32_store', 'delete_struct',
-    'sleep', 'random'
-]
+  "print",
+  "input",
+  "itos",
+  "itod",
+  "dtos",
+  "dtoi",
+  "stoi",
+  "stod",
+  "length",
+  "get",
+  "allocate_memory",
+  "mem_copy",
+  "get_array_pointer",
+  "array_int_to_string",
+  "string_to_array_int",
+  "error",
+  "deallocate_memory",
+  "delete_i32_array",
+  "delete_string",
+  "i32_load",
+  "i32_store",
+  "delete_struct",
+  "sleep",
+  "random",
+];
 
 const token_to_op: { [key: number]: string | Object } = {};
 token_to_op[TokenType.PLUS] = ".add";
 token_to_op[TokenType.MINUS] = ".sub";
 token_to_op[TokenType.TIMES] = ".mul";
 token_to_op[TokenType.DIVIDE] = {
-    "i32": ".div_s",
-    "f64": ".div"
+  i32: ".div_s",
+  f64: ".div",
 };
 
 token_to_op[TokenType.EQUAL] = ".eq";
 token_to_op[TokenType.LESS_EQ] = {
-    "i32": ".le_s",
-    "f64": ".le"
+  i32: ".le_s",
+  f64: ".le",
 };
 
-
 token_to_op[TokenType.LESS] = {
-    "i32": ".lt_s",
-    "f64": ".lt"
+  i32: ".lt_s",
+  f64: ".lt",
 };
 
 token_to_op[TokenType.GREATER_EQ] = {
-    "i32": ".ge_s",
-    "f64": ".ge"
+  i32: ".ge_s",
+  f64: ".ge",
 };
 
 token_to_op[TokenType.GREATER] = {
-    "i32": ".gt_s",
-    "f64": ".gt"
+  i32: ".gt_s",
+  f64: ".gt",
 };
-
 
 token_to_op[TokenType.AND] = ".and";
 token_to_op[TokenType.NOT_EQUAL] = ".ne";
 token_to_op[TokenType.OR] = ".or";
 token_to_op[TokenType.MOD] = {
-    "i32": ".rem_s",
+  i32: ".rem_s",
 };
 
 const mapped_functions = {
-    "mem_copy": "memory.copy",
-    "i32_load": "i32.load",
-    "i32_store": "i32.store"
-}
+  mem_copy: "memory.copy",
+  i32_load: "i32.load",
+  i32_store: "i32.store",
+};
 
 export function getMappedFunctions(name: string) {
-    if (name in mapped_functions) {
-        return mapped_functions[name]
-    }
-    return undefined
+  if (name in mapped_functions) {
+    return mapped_functions[name];
+  }
+  return undefined;
 }
 
-
 export function getPrintFunction(data_type: DataType) {
-    //   # print(data_type)
-    //   # print(data_type.type_name == TokenType.BOOL_TYPE)
-    const type_name = data_type.type_name.token_type
+  //   # print(data_type)
+  //   # print(data_type.type_name == TokenType.BOOL_TYPE)
+  const type_name = data_type.type_name.token_type;
 
-    if (data_type.is_array) {
-        return "print_int";
-    }
-    else if ([TokenType.BOOL_TYPE, TokenType.BOOL_VAL].includes(type_name)) {
-        return "print_bool"
-    }
-    else if ([TokenType.INT_TYPE, TokenType.INT_VAL].includes(type_name)) {
-        return "print_int"
-    }
-    else if ([TokenType.DOUBLE_TYPE, TokenType.DOUBLE_VAL].includes(type_name)) {
-        return "print_double"
-    }
-    else if ([TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)) {
-        return "print_string"
-    }
+  if (data_type.is_array) {
+    return "print_int";
+  } else if ([TokenType.BOOL_TYPE, TokenType.BOOL_VAL].includes(type_name)) {
+    return "print_bool";
+  } else if ([TokenType.INT_TYPE, TokenType.INT_VAL].includes(type_name)) {
+    return "print_int";
+  } else if (
+    [TokenType.DOUBLE_TYPE, TokenType.DOUBLE_VAL].includes(type_name)
+  ) {
+    return "print_double";
+  } else if (
+    [TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)
+  ) {
+    return "print_string";
+  }
 }
 
 export function getLengthFunction(data_type: DataType) {
-    const type_name = data_type.type_name.token_type
+  const type_name = data_type.type_name.token_type;
 
-    if ([TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)) {
-        return "length_string";
-    }
+  if ([TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)) {
+    return "length_string";
+  }
 
-    return "length";
+  return "length";
 }
 
 export function getWASMType(type_name: Token, is_array: boolean) {
-    if (is_array) {
-        return "i32";
-    }
+  if (is_array) {
+    return "i32";
+  }
 
-    if ([
-        TokenType.ID,
-        TokenType.VOID_TYPE,
-        TokenType.NULL_VAL,
-        TokenType.STRING_TYPE,
-        TokenType.STRING_VAL,
-    ].includes(type_name.token_type)) {
-        return "i32"
-    }
+  if (
+    [
+      TokenType.ID,
+      TokenType.VOID_TYPE,
+      TokenType.NULL_VAL,
+      TokenType.STRING_TYPE,
+      TokenType.STRING_VAL,
+    ].includes(type_name.token_type)
+  ) {
+    return "i32";
+  }
 
-    if ([TokenType.DOUBLE_TYPE, TokenType.DOUBLE_VAL].includes(type_name.token_type)) {
-        return "f64"
-    }
+  if (
+    [TokenType.DOUBLE_TYPE, TokenType.DOUBLE_VAL].includes(type_name.token_type)
+  ) {
+    return "f64";
+  }
 
-    if (type_name.lexeme == "int" ||
-        type_name.lexeme == "bool" ||
-        type_name.token_type == TokenType.INT_VAL ||
-        type_name.token_type == TokenType.BOOL_VAL) {
+  if (
+    type_name.lexeme == "int" ||
+    type_name.lexeme == "bool" ||
+    type_name.token_type == TokenType.INT_VAL ||
+    type_name.token_type == TokenType.BOOL_VAL
+  ) {
+    return "i32";
+  }
 
-        return "i32"
-    }
-
-    throw Error("Type not recognized");
+  throw Error("Type not recognized");
 }
 
 export function getWASMSize(data_type: DataType) {
-    if ([
-        TokenType.INT_TYPE,
-        TokenType.INT_VAL,
-        TokenType.ID,
-        TokenType.STRING_TYPE,
-        TokenType.STRING_VAL,
-    ].includes(data_type.type_name.token_type)) {
-        return 4
-    }
+  if (
+    [
+      TokenType.INT_TYPE,
+      TokenType.INT_VAL,
+      TokenType.ID,
+      TokenType.STRING_TYPE,
+      TokenType.STRING_VAL,
+    ].includes(data_type.type_name.token_type)
+  ) {
+    return 4;
+  }
 
-    if ([
-        TokenType.DOUBLE_TYPE,
-        TokenType.DOUBLE_VAL
-    ].includes(data_type.type_name.token_type)) {
-        return 8
-    }
+  if (
+    [TokenType.DOUBLE_TYPE, TokenType.DOUBLE_VAL].includes(
+      data_type.type_name.token_type
+    )
+  ) {
+    return 8;
+  }
 
-    return 0
+  return 0;
 }
 
 export function getWASMValue(type_name: Token) {
-    if (type_name.lexeme === "null") {
-        return "0"
-    }
+  if (type_name.lexeme === "null") {
+    return "0";
+  }
 
-    if (type_name.token_type === TokenType.BOOL_VAL) {
-        if (type_name.lexeme === "true") {
-            return "1"
-        }
-        else {
-            return "0"
-        }
+  if (type_name.token_type === TokenType.BOOL_VAL) {
+    if (type_name.lexeme === "true") {
+      return "1";
+    } else {
+      return "0";
     }
+  }
 
-    return type_name.lexeme
+  return type_name.lexeme;
 }
 
 export function getWASMOp(op: Token, type_name: Token) {
-    const tmpOp = token_to_op[op.token_type]
+  const tmpOp = token_to_op[op.token_type];
 
-    if (typeof tmpOp == "string") {
-        return tmpOp;
-    }
-    else {
-        return tmpOp[getWASMType(type_name, false)]
-    }
+  if (typeof tmpOp == "string") {
+    return tmpOp;
+  } else {
+    return tmpOp[getWASMType(type_name, false)];
+  }
 }
 
-function generate_array_functions(size: number, wasm_type_name: string) {
-    return `
+function generate_array_functions(
+  size: number,
+  wasm_type_name: string,
+  unsafe: boolean = false
+) {
+  return `
   (func \$${wasm_type_name}_set_array_elem (param $value ${wasm_type_name}) (param $index i32) (param $arr i32) 
+    ${
+      unsafe
+        ? ""
+        : `
     local.get $arr
     call $check_if_null
     local.get $index
-    call $check_in_bounds
+    call $check_in_bounds`
+    }
     
     local.get $index
     i32.const ${size}
@@ -199,9 +230,15 @@ function generate_array_functions(size: number, wasm_type_name: string) {
   )
   
   (func \$${wasm_type_name}_get_array_elem (param $index i32) (param $arr i32) (result ${wasm_type_name})
+    ${
+      unsafe
+        ? ""
+        : `
     local.get $arr
+    call $check_if_null
     local.get $index
-    call $check_in_bounds
+    call $check_in_bounds`
+    }
     
     local.get $index
     i32.const ${size}
@@ -241,9 +278,8 @@ function generate_array_functions(size: number, wasm_type_name: string) {
   )`;
 }
 
-
 function generate_struct_functions(size: number, wasm_type: string) {
-    return `
+  return `
   (func \$${wasm_type}_assign_to_struct (param $value ${wasm_type}) (param $struct i32) (param $index i32)
     local.get $struct
     call $check_if_null
@@ -252,11 +288,11 @@ function generate_struct_functions(size: number, wasm_type: string) {
 
     local.get $value
     ${wasm_type}.store
-  )`
+  )`;
 }
 
 function generatePrintFunctions() {
-    return `
+  return `
   (func $print_bool (param $print_bool0_value i32)
 
     local.get $print_bool0_value
@@ -333,11 +369,11 @@ function generatePrintFunctions() {
     call $print
     local.get $print_string0_value
     call $delete_string
-  )`
+  )`;
 }
 
-export function getWASMCoreFunctions(){
-    return `(func $print (import "env" "print") (param i32))
+export function getWASMCoreFunctions(unsafe = false) {
+  return `(func $print (import "env" "print") (param i32))
   (func $input (import "env" "input") (result i32))
   (func $sleep (import "env" "sleep") (param i32))
   (func $random (import "env" "random") (result f64))
@@ -1017,9 +1053,9 @@ export function getWASMCoreFunctions(){
   )
 
   ${generatePrintFunctions()}
-  ${generate_array_functions(4, "i32")}
-  ${generate_array_functions(4, "f32")}
-  ${generate_array_functions(8, "f64")}
+  ${generate_array_functions(4, "i32", unsafe)}
+  ${generate_array_functions(4, "f32", unsafe)}
+  ${generate_array_functions(8, "f64", unsafe)}
   (func $allocate_struct (param $size i32) (result i32)
     (local $tmpOffset i32)
     local.get $size
@@ -1037,19 +1073,50 @@ export function getWASMCoreFunctions(){
   )
   ${generate_struct_functions(4, "i32")}
   ${generate_struct_functions(8, "f64")}
-`
+`;
 }
 
-
 export const DATA_TYPES = {
-  "void": new ast.DataType(false, ast.Token(ast.TokenType.VOID_TYPE, "void", 0, 0), undefined),
-  "string": new ast.DataType(false, ast.Token(ast.TokenType.STRING_TYPE, "string", 0, 0), undefined),
-  "int": new ast.DataType(false, ast.Token(ast.TokenType.INT_TYPE, "int", 0, 0), undefined),
-  "double": new ast.DataType(false, ast.Token(ast.TokenType.DOUBLE_TYPE, "double", 0, 0), undefined),
-  "bool": new ast.DataType(false, ast.Token(ast.TokenType.BOOL_TYPE, "bool", 0, 0), undefined),
-  "array_int": new ast.DataType(true, ast.Token(ast.TokenType.INT_TYPE, "int", 0, 0), undefined),
-  "ANY_ARRAY": new ast.DataType(true, ast.Token(ast.TokenType.ID, "any", 0, 0), undefined),
-  "ANY_STRUCT": new ast.DataType(true, ast.Token(ast.TokenType.ID, "any_struct", 0, 0), undefined),
+  void: new ast.DataType(
+    false,
+    ast.Token(ast.TokenType.VOID_TYPE, "void", 0, 0),
+    undefined
+  ),
+  string: new ast.DataType(
+    false,
+    ast.Token(ast.TokenType.STRING_TYPE, "string", 0, 0),
+    undefined
+  ),
+  int: new ast.DataType(
+    false,
+    ast.Token(ast.TokenType.INT_TYPE, "int", 0, 0),
+    undefined
+  ),
+  double: new ast.DataType(
+    false,
+    ast.Token(ast.TokenType.DOUBLE_TYPE, "double", 0, 0),
+    undefined
+  ),
+  bool: new ast.DataType(
+    false,
+    ast.Token(ast.TokenType.BOOL_TYPE, "bool", 0, 0),
+    undefined
+  ),
+  array_int: new ast.DataType(
+    true,
+    ast.Token(ast.TokenType.INT_TYPE, "int", 0, 0),
+    undefined
+  ),
+  ANY_ARRAY: new ast.DataType(
+    true,
+    ast.Token(ast.TokenType.ID, "any", 0, 0),
+    undefined
+  ),
+  ANY_STRUCT: new ast.DataType(
+    true,
+    ast.Token(ast.TokenType.ID, "any_struct", 0, 0),
+    undefined
+  ),
 };
 
-// export const BUILT_IN_DEFINITION = 
+// export const BUILT_IN_DEFINITION =

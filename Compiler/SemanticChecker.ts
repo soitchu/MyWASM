@@ -704,7 +704,7 @@ export class SemanticChecker extends Visitor{
         }
     }        
     
-    visit_program(program: ast.Program) {
+    visit_program(program: ast.Program, config: any = {}) {
         /**
             Entry visiting point 
         */
@@ -717,7 +717,9 @@ export class SemanticChecker extends Visitor{
             this.indent += 1
             
             this.core_functions += '(import "env" "memory" (memory $0 1))'
-            this.core_functions += WASM.getWASMCoreFunctions()
+            this.core_functions += WASM.getWASMCoreFunctions(
+                config.unsafeArray === true
+            )
 
             this.symbol_table.add("offset", WASM.DATA_TYPES["int"])
             this.symbol_table.add("mem", WASM.DATA_TYPES["array_int"])

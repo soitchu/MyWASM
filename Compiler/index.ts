@@ -11,6 +11,7 @@ import wabt from "wabt";
 interface CompilerOptions {
   O: number | undefined;
   S: number | undefined;
+  unsafeArray: boolean | undefined;
   fastMath: boolean;
   returnBuffer: boolean;
 }
@@ -47,7 +48,7 @@ export async function init(
   const ast = new ASTParser(lexer);
   const program = ast.parse();
   const codeGen = new SemanticChecker(true, undefined, join(input, "../"));
-  const wat = codeGen.visit_program(program) as string;
+  const wat = codeGen.visit_program(program, options) as string;
 
   const wabtModule = await wabt();
   let wasmModuleBuffer = wabtModule

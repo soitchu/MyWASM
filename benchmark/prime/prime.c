@@ -1,7 +1,7 @@
 
 #include <stdbool.h>
-#include <ctime>
-#include <cstdio>
+#include <time.h>
+#include <stdio.h>
 
 
 bool isPrime(int n) {
