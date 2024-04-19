@@ -3,6 +3,8 @@ MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it
 # Benchmarking
 MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. 
 
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/7632da42-9ede-4e3e-8fb2-9c7c6fd74859" height="350" />
+
 Note: python was omitted since it was significantly slower than the other languages.
 
 
