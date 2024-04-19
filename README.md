@@ -1,11 +1,15 @@
 MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it compiles into WASM rather than having its own interpreter. And rather than leaking memory all over the place, MyWASM has a C-like memory management. MyWASM also has its own [LSP extension](https://marketplace.visualstudio.com/items?itemName=soitchu.mywasm) for VSCode.
 
 # Benchmarking
-MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. 
+MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. For binaryen, the O4 flag was passed, and for gcc the O3 flag was used.
 
+## Finding the first n primes
 <img src="https://github.com/soitchu/MyWASM/assets/66003387/7632da42-9ede-4e3e-8fb2-9c7c6fd74859" height="350" />
 
-Note: python was omitted since it was significantly slower than the other languages.
+## Merge sorting an array
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/b5fb9ea2-f077-482b-b523-056295ccf3a9" height="350" />
+
+Note: The `unsafe-array` flag skips checking out-of-bounds access and null checking, which is similar to how arrays in C work.
 
 
 # Design
