@@ -1,6 +1,9 @@
-function merge(arr, p, q, r, L, M) {
+function merge(arr, p, q, r) {
   const n1 = q - (p - 1);
   const n2 = r - q;
+
+  const L = new Uint32Array(n1);
+  const M = new Uint32Array(n2);
 
   for (let i = 0; i < n1; i = i + 1) {
     L[i] = arr[p + i];
@@ -55,8 +58,8 @@ function mergeSort(arr, l, r, L, M) {
 function main() {
   const size = 10000000;
   const arr = new Uint32Array(size);
-  const L = new Uint32Array(size);
-  const M = new Uint32Array(size);
+  const L = undefined;
+  const M = undefined;
 
   for (let i = 0; i < size; i = i + 1) {
     arr[i] = size - i;

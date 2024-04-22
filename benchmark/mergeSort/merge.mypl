@@ -55,7 +55,7 @@ function void mergeSort(array int arr, int l, int r, array int L, array int M) {
 }
 
 export function void main() {
-  int size = 10000000;
+  int size = 100000000;
   array int arr = new int[size];
   array int L = new int[size];
   array int M = new int[size];
