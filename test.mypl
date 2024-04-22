@@ -2,12 +2,12 @@ function int randomInt(int start, int end) {
   return dtoi(random() * itod(end - start + 1));
 }
 
-function void merge(array int arr, int p, int q, int r, array int L1, array int M1) {
+function void merge(array int arr, int p, int q, int r) {
   int n1 = q - (p - 1);
   int n2 = r - q;
 
   array int L = new int[n1];
-  array int M = new int[n2];
+  array int M = new int[n1];
 
   for (int i = 0; i < n1; i = i + 1){
     L[i] = arr[p + i];
@@ -48,25 +48,21 @@ function void merge(array int arr, int p, int q, int r, array int L1, array int 
   delete M;
 }
 
-function void mergeSort(array int arr, int l, int r, array int L, array int M) {
+function void mergeSort(array int arr, int l, int r) {
   if (l < r) {
 
     int m = l + (r - l) / 2;
 
-    mergeSort(arr, l, m, L, M);
-    mergeSort(arr, m + 1, r, L, M);
+    mergeSort(arr, l, m);
+    mergeSort(arr, m + 1, r);
 
-    merge(arr, l, m, r, L, M);
+    merge(arr, l, m, r);
   }
 }
 
 export function void main() {
-  int size = 10000000;
+  int size = 100000000;
   array int arr = new int[size];
-  // array int L = new int[size];
-  // array int M = new int[size];
-
-
   array int L = null;
   array int M = null;
 
@@ -74,8 +70,6 @@ export function void main() {
     arr[i] = size - i;
   }
 
-  mergeSort(arr, 0, size - 1, L, M);
+  mergeSort(arr, 0, size - 1);
 
-  // delete L;
-  // delete M;
 }
