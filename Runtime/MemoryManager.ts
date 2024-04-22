@@ -3,7 +3,7 @@ import {
 } from 'data-structure-typed';
 
 export class MemoryManager extends AVLTree {
-    availOffsets = new AVLTree();
+    availOffsets = new Map<number, number>();
     globalOffset = 4;
     DEBUG = false;
     trace = "";
@@ -30,7 +30,7 @@ export class MemoryManager extends AVLTree {
         // this.availOffsets.print();
 
         if (this.availOffsets.has(startOffset - 1)) {
-            const availStartOffset = this.availOffsets.get(startOffset - 1);
+            const availStartOffset = this.availOffsets.get(startOffset - 1) as number;
             const availEndOffset = startOffset - 1;
             const availSize = availEndOffset - availStartOffset + 1;
 
@@ -54,7 +54,7 @@ export class MemoryManager extends AVLTree {
         } 
         
         if (this.availOffsets.has(endOffset + 1)) {
-            const availEndOffset = this.availOffsets.get(endOffset + 1);
+            const availEndOffset = this.availOffsets.get(endOffset + 1) as number;
             const availStartOffset = endOffset + 1;
             const availSize = availEndOffset - availStartOffset + 1;
             
@@ -108,8 +108,8 @@ export class MemoryManager extends AVLTree {
 
 
   
-        this.availOffsets.add(startOffset, endOffset);
-        this.availOffsets.add(endOffset, startOffset);
+        this.availOffsets.set(startOffset, endOffset);
+        this.availOffsets.set(endOffset, startOffset);
 
         // console.log("====");
         // this.availOffsets.print();
@@ -156,7 +156,7 @@ export class MemoryManager extends AVLTree {
                 this.add(remainingBytes, offset + requestedSize);
             }
 
-            return [offset, requestedSize];
+            return offset;
         } else {
             return undefined;
         }

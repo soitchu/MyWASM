@@ -44,22 +44,12 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
                 if (foundOffset === undefined) {
                     let tmpOffset = freed_mem.globalOffset;
                     freed_mem.increaseGlobalOffset(requestedSize);
-                    
                     // sum += performance.now() - start;
                     // console.log(sum);
-
                     return tmpOffset;
                 }
                 else {
-                    const [offset, size] = foundOffset;
-                    if (size !== requestedSize) {
-                        throw Error("Requested size is larger than the allocated memory");
-                    }
-
-                    // sum += performance.now() - start;
-                    // console.log(sum);
-
-                    return offset;
+                    return foundOffset;
                 }
             },
             deallocate_memory(index: number, size: number) {

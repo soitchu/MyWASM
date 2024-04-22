@@ -5,8 +5,8 @@ export async function init(filename: string, debug: boolean, wasmBuffer: Uint8Ar
     const wasmModuleBuffer = wasmBuffer === undefined ? fs.readFileSync(filename) : wasmBuffer;
 
     const memory = new WebAssembly.Memory({
-        initial: 10000,
-        maximum: 10000,
+        initial: 24000,
+        maximum: 24000,
     });
 
     const ini = "default" in WASM ? WASM.ini : WASM.ini;
