@@ -1,11 +1,18 @@
 MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it compiles into WASM rather than having its own interpreter. And rather than leaking memory all over the place, MyWASM has a C-like memory management. MyWASM also has its own [LSP extension](https://marketplace.visualstudio.com/items?itemName=soitchu.mywasm) for VSCode.
 
 # Benchmarking
-MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. 
+MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. For binaryen, the O4 flag was passed, and for gcc the O3 flag was used.
 
+## Finding the first n primes
 <img src="https://github.com/soitchu/MyWASM/assets/66003387/7632da42-9ede-4e3e-8fb2-9c7c6fd74859" height="350" />
 
-Note: python was omitted since it was significantly slower than the other languages.
+## Merge sorting an array
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/b5fb9ea2-f077-482b-b523-056295ccf3a9" height="350" />
+
+Note: The `unsafe-array` flag skips checking out-of-bounds access and null checking, which is similar to how arrays in C work.
+
+The system used to run these benchmarks:
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/f910bfc6-cbd6-4e26-8807-067a7c359c4c" height="350" />
 
 
 # Design
@@ -276,11 +283,15 @@ When a struct is initiated, its total size is calculated and that information is
     }
 
 Its total size is (8 + 8 + 4) = 20 bits. However, we need to track how big the struct is, so we allocate the first 4 bytes to store the struct’s length. So, we allocate 20 + 4 bits in total. If the struct was initialized like new Config(1.0, 2.0, 5) then the linear memory will look like:
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/46562d02-4934-4ceb-b777-a36f818efa35" height="350" />
+
 
 
 
 ## 3.2 Assigning and reading a struct’s field
 When a particular needs to be read, all we need to do is add the appropriate byte offset to the struct’s pointer. For example, consider the following code:
+
+![image](https://github.com/soitchu/MyWASM/assets/66003387/ffb6f9fd-5bc4-4101-934a-177f521c0679)![image](https://github.com/soitchu/MyWASM/assets/66003387/3cee2c41-3987-41bb-96d8-9281ce3e1d90)
 
 Values are assigned in a similar way; the cumulative is calculated and then the value is assigned.
 
