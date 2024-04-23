@@ -25,8 +25,12 @@ program
   .argument("<string>", "input; should be a .wasm file")
   .option("--debug", "prints the time taken to execute and the memory")
   .option("--compile", "compiles a .mypl file and then runs it")
+  .option("--memory <string>", "Size of memory that will be passed to the WASM runtime. eg. 10K, 10kb, 10M, 10mb, 1G, 4.5gb")
   .action(async (input: string, config) => {
     let wasmBuffer: Uint8Array | undefined;
+
+    // console.log(config.memory);
+    const memoryPages = config.memory ? convertToWASMPages(config.memory): 16;
 
     if (config.compile) {
       wasmBuffer = await Compiler.init(input, "", {
@@ -38,11 +42,46 @@ program
       });
     }
 
-    await Runtime.init(input, config.debug, wasmBuffer!);
+    await Runtime.init(input, config.debug, wasmBuffer!, memoryPages);
   });
 
 program.parse();
 
+function convertToWASMPages(sizeStr: string): number | never {
+  const sizeUnits: Record<string, number> = {
+      'kb': 1024,
+      'k': 1024,
+      'mb': 1024 ** 2,
+      'm': 1024 ** 2,
+      'gb': 1024 ** 3,
+      'g': 1024 ** 3,
+  };
+
+  sizeStr = sizeStr.toLowerCase();
+
+  try {
+      const numericPart = parseFloat(sizeStr.slice(0, -1));
+      let unit = sizeStr.slice(-2);
+
+      if(unit.charCodeAt(0) >= 48 && unit.charCodeAt(0) <= 57) {
+        unit = sizeStr.slice(-1);
+      }
+
+      unit = unit.toLowerCase();
+
+      if (!(unit in sizeUnits)) {
+          throw new Error(`Unsupported size unit: ${unit}`);
+      }
+
+      if(Math.floor(numericPart * sizeUnits[unit]) % 2 ** 16 !== 0) {
+        throw new Error("The memory size must be a multiple of 64kb");
+      }
+
+      return Math.floor(numericPart * sizeUnits[unit]) / 2 ** 16;
+  } catch (error) {
+      throw new Error(`Invalid size string: ${sizeStr}: ${error.message}`);
+  }
+}
 
 export {
   Runtime,
