@@ -37,7 +37,8 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
     function deallocate(queue: DeallocQueue, freed_mem: MemoryManager) {
         let head = queue as DeallocQueue | null;
         
-        while(head !== null && head.next !== null && (used / totalMemory) > 0.9) {
+        while(head !== null && head.next !== null) {
+            // console.log(used);
             used -= head.size;
             freed_mem.add(head.size, head.index);
             head = head.next;
@@ -56,9 +57,10 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
         toDealloc = head;
     };
 
-    setInterval(() => {
-        
-    }, 100);
+
+    // setInterval(() => {
+    //     console.log(sum);
+    // }, 100);
 
     let b;
     const wasmModule = (await WebAssembly.instantiate(wasmModuleBuffer, b = {
@@ -80,13 +82,13 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
             },
 
             allocate_memory(requestedSize: number, second: boolean = false) {
-                if(used / totalMemory > 0.9) {
-                    // console.log(`Usage: ${(used / totalMemory) * 100}`);
-                    startDealloc();
-                    // console.log(`Usage: ${(used / totalMemory) * 100}`);
-                }
+                // if(used / totalMemory > 0.9) {
+                //     // console.log(`Usage: ${(used / totalMemory) * 100}`);
+                //     startDealloc();
+                //     // console.log(`Usage: ${(used / totalMemory) * 100}`);
+                // }
                 
-                used += requestedSize;
+                // used += requestedSize;
                 // TODO make sure that we don't give an insane amount of memory
                 // if only a few bytes are needed. Also, make sure that the remainder
                 // of the memory goes back into the freed pool
@@ -94,24 +96,27 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
 
                 const foundOffset = freed_mem.getOffset(requestedSize);
                 
-                if (foundOffset === undefined) {
+                if (!foundOffset) {
                     let tmpOffset = freed_mem.globalOffset;
 
                     if((freed_mem.globalOffset + requestedSize) >= totalMemory) {
-                        if(!second) {
-                            console.log("Trying to deallocate and allocate");
-                            startDealloc();
-                            return b.env.allocate_memory(requestedSize, true)
-                        } else{
+                        // if(!second) {
+                        //     console.log("Trying to deallocate and allocate");
+                        //     startDealloc();
+                        //     return b.env.allocate_memory(requestedSize, true)
+                        // } else{
                             throw new Error("Out of memory");
-                        }
+                        // }
                     }
-
+                    
                     freed_mem.increaseGlobalOffset(requestedSize);
+
+                    // sum += performance.now() - start;
 
                     return tmpOffset;
                 }
                 else {
+                    // sum += performance.now() - start;
                     return foundOffset;
                 }
             },
@@ -125,20 +130,20 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
                 //     intArray[i] = 0;
                 // }
 
-                toDealloc.index = index;
-                toDealloc.size = size;
+                // toDealloc.index = index;
+                // toDealloc.size = size;
 
-                toDealloc.next = {
-                    next: null,
-                    index: 0,
-                    size: 0
-                };
+                // toDealloc.next = {
+                //     next: null,
+                //     index: 0,
+                //     size: 0
+                // };
 
-                toDealloc = toDealloc.next;
+                // toDealloc = toDealloc.next;
 
                 // console.log(head);
                 // toDealloc.push(size, index);
-                // freed_mem.add(size, index);
+                freed_mem.add(size, index);
                 // sum += performance.now() - start;
                 // console.log(sum);
             },
