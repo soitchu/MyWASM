@@ -60,7 +60,6 @@ function convertToWASMPages(sizeStr: string): number | never {
   sizeStr = sizeStr.toLowerCase();
 
   try {
-      // Extract numeric part and unit from the size string
       const numericPart = parseFloat(sizeStr.slice(0, -1));
       let unit = sizeStr.slice(-2);
 
@@ -74,9 +73,13 @@ function convertToWASMPages(sizeStr: string): number | never {
           throw new Error(`Unsupported size unit: ${unit}`);
       }
 
+      if(Math.floor(numericPart * sizeUnits[unit]) % 2 ** 16 !== 0) {
+        throw new Error("The memory size must be a multiple of 64kb");
+      }
+
       return Math.floor(numericPart * sizeUnits[unit]) / 2 ** 16;
   } catch (error) {
-      throw new Error(`Invalid size string: ${sizeStr}`);
+      throw new Error(`Invalid size string: ${sizeStr}: ${error.message}`);
   }
 }
 
