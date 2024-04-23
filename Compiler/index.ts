@@ -16,29 +16,6 @@ interface CompilerOptions {
   returnBuffer: boolean;
 }
 
-// function processError(err: any) {
-//   if (err instanceof Error) {
-//     const errorObj = err as unknown as MyWASMError;
-//     console.error(`${errorObj.type} error: ${errorObj.message}`);
-//   } else {
-//     console.error("(432) An unexpected error has occurred.");
-//   }
-
-//   process.exit(1);
-// }
-
-// export async function parse(code: string, uri: string) {
-//   try {
-//     const lexer = new Lexer(new StringBuffer(code));
-//     const ast = new ASTParser(lexer, undefined, false);
-//     const program = ast.parse();
-//     const codeGen = new SemanticChecker(false, undefined, join(uri, "../"));
-//     const wat = codeGen.visit_program(program) as string;
-//   } catch (err) {
-//     processError(err);
-//   }
-// }
-
 export async function init(
   input: string,
   output: string,

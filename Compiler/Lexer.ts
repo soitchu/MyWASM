@@ -190,7 +190,7 @@ export class Lexer {
         }
     }
 
-    handle_ambiguous_tokens(this) {
+    handle_ambiguous_tokens() {
         let tempLexeme = this.lexeme;
 
         switch (tempLexeme) {
@@ -224,6 +224,7 @@ export class Lexer {
         }
 
         if (tempLexeme in ambiguous_char_map) {
+            // @ts-expect-error
             this.token_type = ambiguous_char_map[tempLexeme];
             this.lexeme = tempLexeme;
         }
@@ -290,6 +291,7 @@ export class Lexer {
 
 
         if (this.lexeme in multi_char_map){
+            // @ts-expect-error
             this.token_type = multi_char_map[this.lexeme];
         }
         else if (this.lexeme.length == 1 && !this.is_valid_id(this.lexeme)) {
@@ -323,6 +325,7 @@ export class Lexer {
             // by just looking at one character (which includes 
             // some operators and punctuations)
 
+            // @ts-expect-error
             this.token_type = single_char_map[this.lexeme];
         }
         else if (this.isNumeric(this.lexeme)) {
