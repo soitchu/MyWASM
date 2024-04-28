@@ -21,5 +21,6 @@ jobs:
         
         - name: Testing
           run: |
+            make install
             bun test
     
