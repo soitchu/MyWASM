@@ -16,7 +16,6 @@ const BOOLEAN_OPS = ["!=", "==", ">", ">=", "<", "<=", "or", "and"];
 const DONT_COPY_STRINGS_FOR = [
     'delete_string',
     'get_array_pointer',
-    'print',
     'string_to_array_int',
     'get'
 ];
