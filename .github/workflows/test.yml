@@ -1,0 +1,26 @@
+name: Build and release binaries
+permissions:
+  contents: write
+on:
+  push:
+    branches-ignore: ["main"]
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Tests the code"
+        default: "Testing"
+jobs:      
+  test:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Install bun
+          uses: oven-sh/setup-bun@v1
+          
+        - name: Cloning the repo
+          uses: actions/checkout@v4
+        
+        - name: Testing
+          run: |
+            make install
+            bun test
+    

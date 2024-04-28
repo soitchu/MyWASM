@@ -3,14 +3,15 @@ permissions:
   contents: write
 on:
   push:
-    branches: ["*"]
+    branches: ["main"]
   workflow_dispatch:
     inputs:
       name:
         description: "World"
         default: "Hello"
-jobs:
+jobs:      
   build-x86:
+    needs: test
     runs-on: ${{ matrix.os }}
     environment: build
     strategy:
@@ -31,7 +32,7 @@ jobs:
           
         - name: Install the modules
           run: |
-            ls
+            bun test
             make install
             make build
         - name: Upload artifact
