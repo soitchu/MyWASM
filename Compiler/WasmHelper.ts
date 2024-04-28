@@ -83,8 +83,6 @@ export function getPrintFunction(data_type: DataType) {
   //   # print(data_type.type_name == TokenType.BOOL_TYPE)
   const type_name = data_type.type_name.token_type;
 
-  console.log(data_type);
-
   if (data_type.is_array) {
     return "print_int";
   } else if ([TokenType.BOOL_TYPE, TokenType.BOOL_VAL].includes(type_name)) {
