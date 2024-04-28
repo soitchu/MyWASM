@@ -1,0 +1,8 @@
+import "b.mypl" as B;
+
+export function void main() {
+    B::importedStruct x = B::importedFunction();
+
+    print(itos(x.a) + "\n");
+    print(x.b);
+}

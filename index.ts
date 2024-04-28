@@ -44,7 +44,7 @@ program
       });
     }
 
-    await Runtime.init(input, config.debug, wasmBuffer!, memoryPages, config.zeroOnDealloc === true);
+    await Runtime.init(input, config.debug, wasmBuffer!, memoryPages, config.zeroOnDealloc === true, false);
   });
 
 program.parse();

@@ -17,7 +17,7 @@ interface DeallocQueue {
 }
 
 
-export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Array, zeroOutMemory: boolean = false) {
+export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Array, zeroOutMemory: boolean = false, captureOutput: boolean = false) {
     const freed_mem = new MemoryManager();
     const intArray = new Int32Array(memory.buffer);
     // const nullError = new WebAssembly.Tag({ parameters: ["i32"] });
@@ -27,6 +27,11 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
         next: null,
         index: 0,
         size: 0
+    };
+
+    const returnObject = {
+        wasmModule: undefined as WebAssembly.WebAssemblyInstantiatedSource | undefined,
+        output: ""
     };
 
     const totalMemory = memory.buffer.byteLength;
@@ -70,7 +75,12 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
             memory: memory,
             print: function (index: number) {
                 const str = parseString(index / 4, memory).replace(/\\n/g, "\n");
-                process.stdout.write(str);
+
+                if(!captureOutput) {
+                    process.stdout.write(str);
+                }else {
+                    returnObject.output += str;
+                }
             },
             
             input: function () {
@@ -162,7 +172,9 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
 
     freed_mem.globalOffset = new Uint32Array(memory.buffer)[1];
 
-    return wasmModule;
+    returnObject.wasmModule = wasmModule;
+
+    return returnObject;
 }
 
 export function parseString(startIndex: number, memory: WebAssembly.Memory) {
