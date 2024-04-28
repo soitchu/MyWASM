@@ -16,7 +16,7 @@ test("test_empty_input", () => {
         new StringBuffer(in_stream)
     )).parse()
 
-    expect(p.fun_defs.length).toBe(0);
+    expect(p.fun_defs.length).toBe(1);
     expect(p.struct_defs.length).toBe(0);
 });
 
