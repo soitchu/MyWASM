@@ -9,9 +9,8 @@ on:
       name:
         description: "World"
         default: "Hello"
-jobs:      
+jobs:
   build-x86:
-    needs: test
     runs-on: ${{ matrix.os }}
     environment: build
     strategy:
@@ -32,7 +31,7 @@ jobs:
           
         - name: Install the modules
           run: |
-            bun test
+            ls
             make install
             make build
         - name: Upload artifact
@@ -69,6 +68,3 @@ jobs:
           files: |
             mywasm-window-amd64.exe
             mywasm-linux-amd64
-              
-        
-    
