@@ -61,15 +61,17 @@ function void mergeSort(array int arr, int l, int r) {
 }
 
 export function void main() {
-  int size = 100000;
-  array int arr = new int[size];
-  array int L = null;
-  array int M = null;
+  array int a = new int[10];
 
-  for(int i = 0; i < size; i = i + 1){
-    arr[i] = size - i;
-  }
+  delete a;
+  // int size = 100000;
+  // array int arr = new int[size];
+  // array int L = null;
+  // array int M = null;
 
-  mergeSort(arr, 0, size - 1);
+  // for(int i = 0; i < size; i = i + 1){
+  //   arr[i] = size - i;
+  // }
 
+  // mergeSort(arr, 0, size - 1);
 }

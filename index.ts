@@ -25,8 +25,10 @@ program
   .argument("<string>", "input; should be a .wasm file")
   .option("--debug", "prints the time taken to execute and the memory")
   .option("--compile", "compiles a .mypl file and then runs it")
+  .option("--zero-on-dealloc", "zeroes the memory when it is deallocated")
   .option("--memory <string>", "Size of memory that will be passed to the WASM runtime. eg. 10K, 10kb, 10M, 10mb, 1G, 4.5gb")
   .action(async (input: string, config) => {
+
     let wasmBuffer: Uint8Array | undefined;
 
     // console.log(config.memory);
@@ -42,7 +44,7 @@ program
       });
     }
 
-    await Runtime.init(input, config.debug, wasmBuffer!, memoryPages);
+    await Runtime.init(input, config.debug, wasmBuffer!, memoryPages, config.zeroOnDealloc === true);
   });
 
 program.parse();
