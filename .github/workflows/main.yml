@@ -10,7 +10,17 @@ on:
         description: "World"
         default: "Hello"
 jobs:
+  test:
+    - name: Cloning the repo
+      uses: actions/checkout@v4
+    
+    - name: Testing
+      run: |
+        bun test
+        
   build-x86:
+    if: github.head_ref == "main" || github.ref_name == "main"
+    needs: test
     runs-on: ${{ matrix.os }}
     environment: build
     strategy:
