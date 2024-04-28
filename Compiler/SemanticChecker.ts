@@ -22,7 +22,7 @@ const DONT_COPY_STRINGS_FOR = [
 
 const SUPPORTED_BINARY_OPS = {
     "array": ["==", "!="]
-};
+} as {[key: string]: string[]};
 
 SUPPORTED_BINARY_OPS[ast.TokenType.INT_TYPE] = ["!=", "==", ">", ">=", "<", "<=", "-", "/", "+", "*", "%"];
 SUPPORTED_BINARY_OPS[ast.TokenType.BOOL_TYPE] = ["and", "or", "!=", "=="];
@@ -1324,6 +1324,7 @@ export class SemanticChecker extends Visitor{
             const func_name = func_info.fun_name.lexeme
             
             if(func_name in this.overloaded_functions){
+                // @ts-expect-error
                 if(!this.match_any_type(this.overloaded_functions[func_name][i.toString()], curr_type)){
                     // # TODO make the error message better
                     this.error(`(19) Call expression's arguments' types must match that of the function \"${func_name}\"`, this.get_first_rvalue_token(arg))
@@ -1421,6 +1422,7 @@ export class SemanticChecker extends Visitor{
                 this.error(`(54) Can\'t use operator "${op}" on arrays`, expr.op)
             }
             
+            // @ts-expect-error
             if ((!first_type.is_array) && (!SUPPORTED_BINARY_OPS[first_type.type_name.token_type].includes(op))){
                 this.error(`(24) Can\'t use operator "${op}" on "${first_type.type_name.lexeme}"s`, expr.op)
             }
@@ -1823,6 +1825,8 @@ export class SemanticChecker extends Visitor{
                 if(curr_type.is_array){
                     this.curr_type = undefined
                     path.array_expr.accept(this)
+
+                    // @ts-expect-error
                     const original_type = curr_type.type_name
                     curr_type = this.get_curr_token(49, curr_type.type_name)
 

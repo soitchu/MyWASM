@@ -1,18 +1,17 @@
-// #----------------------------------------------------------------------
-// # SYMBOL TABLE TESTS
-// #----------------------------------------------------------------------
-
 import { ASTParser } from "../Compiler/AST.ts";
 import { Lexer } from "../Compiler/Lexer.ts";
 import { SemanticChecker } from "../Compiler/SemanticChecker.ts";
 import { StringBuffer } from "../Compiler/StringBuffer.ts";
 import { SymbolTable } from "../Compiler/SymbolTable.ts";
-// import { test } from "./test.ts";
 import { expect, test } from "bun:test";
 
 function len(x: any) {
   return x.length;
 }
+
+// #----------------------------------------------------------------------
+// # SYMBOL TABLE TESTS
+// #----------------------------------------------------------------------
 
 test("test_empty_table", () => {
   let table = new SymbolTable();
@@ -35,56 +34,72 @@ test("test_push_pop", () => {
   expect(len(table) ).toBe(0);
 });
 
-// test("test_simple_add", () => {
-//   let table = new SymbolTable();
-//   // @ts-expect-error
-//   table.add("x", "int");
-//   expect(!table.exists("x"));
-//   table.push_environment();
-//   // @ts-expect-error
-//   table.add("x", "int");
-//   // @ts-expect-error
-//   expect(table.exists("x") && table.get("x")).toBe(");
-//   table.pop_environment();
-// });
+test("test_simple_add", () => {
+  let table = new SymbolTable();
+  // @ts-expect-error
+  table.add("x", "int");
+  expect(!table.exists("x"));
+  table.push_environment();
+  // @ts-expect-error
+  table.add("x", "int");
+  // @ts-expect-error
+  expect(table.exists("x") && table.get("x")).toBe("int");
+  table.pop_environment();
+});
+test("test_multiple_add", () => {
+  const table = new SymbolTable();
+  table.push_environment();
+  // @ts-expect-error
+  table.add("x", "int");
+  // @ts-expect-error
+  table.add("y", "double");
+  // @ts-expect-error
+  expect(table.exists("x") && table.get("x") == "int").toBe(true);
+  // @ts-expect-error
+  expect(table.exists("y") && table.get("y") == "double").toBe(true);
+});
 
-// test("test_multiple_add", () => {
-//   const table = new SymbolTable();
-//   table.push_environment();
-//   table.add("x", "int");
-//   table.add("y", "double");
-//   expect(table.exists("x") && table.get("x") ).toBe(");
-//   expect(table.exists("y") && table.get("y") ).toBe(");
-// });
-
-// test("test_multiple_environments", () => {
-//   const table = new SymbolTable();
-//   table.push_environment();
-//   table.add("x", "int");
-//   table.add("y", "double");
-//   table.push_environment();
-//   table.add("x", "string");
-//   table.add("z", "bool");
-//   table.push_environment();
-//   table.add("u", "Node");
-//   expect(table.exists("x") && table.get("x") ).toBe(");
-//   expect(table.exists("y") && table.get("y") ).toBe(");
-//   expect(table.exists("z") && table.get("z") ).toBe(");
-//   expect(table.exists("u") && table.get("u") ).toBe(");
-//   expect(!table.exists_in_curr_env("x"));
-//   expect(!table.exists_in_curr_env("y"));
-//   expect(!table.exists_in_curr_env("z"));
-//   expect(table.exists_in_curr_env("u"));
-//   table.pop_environment();
-//   expect(!table.exists("u"));
-//   expect(table.exists_in_curr_env("x") && table.get("x") ).toBe(");
-//   expect(table.exists_in_curr_env("z") && table.get("z") ).toBe(");
-//   table.pop_environment();
-//   expect(!table.exists("z"));
-//   expect(table.exists("x") && table.get("x") ).toBe(");
-//   expect(table.exists("y") && table.get("y") ).toBe(");
-//   table.pop_environment();
-// });
+test("test_multiple_environments", () => {
+  const table = new SymbolTable();
+  table.push_environment();
+  // @ts-expect-error
+  table.add("x", "int");
+  // @ts-expect-error
+  table.add("y", "double");
+  table.push_environment();
+  // @ts-expect-error
+  table.add("x", "string");
+  // @ts-expect-error
+  table.add("z", "bool");
+  table.push_environment();
+  // @ts-expect-error
+  table.add("u", "Node");
+  // @ts-expect-error
+  expect(table.exists("x") && table.get("x") == "string").toBe(true);
+  // @ts-expect-error
+  expect(table.exists("y") && table.get("y") == "double").toBe(true);
+  // @ts-expect-error
+  expect(table.exists("z") && table.get("z") == "bool").toBe(true);
+  // @ts-expect-error
+  expect(table.exists("u") && table.get("u") == "Node").toBe(true);
+  expect(!table.exists_in_curr_env("x"));
+  expect(!table.exists_in_curr_env("y"));
+  expect(!table.exists_in_curr_env("z"));
+  expect(table.exists_in_curr_env("u"));
+  table.pop_environment();
+  expect(!table.exists("u")).toBe(true);
+  // @ts-expect-error
+  expect(table.exists_in_curr_env("x") && table.get("x") == "string").toBe(true);
+  // @ts-expect-error
+  expect(table.exists_in_curr_env("z") && table.get("z") == "bool").toBe(true);
+  table.pop_environment();
+  expect(!table.exists("z")).toBe(true);
+  // @ts-expect-error
+  expect(table.exists("x") && table.get("x") == "int").toBe(true);
+  // @ts-expect-error
+  expect(table.exists("y") && table.get("y") == "double").toBe(true);
+  table.pop_environment();
+});
 
 // #----------------------------------------------------------------------
 // # BASIC FUNCTION DEFINITIONS

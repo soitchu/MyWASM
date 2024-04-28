@@ -225,7 +225,6 @@ function generate_array_functions(
     local.get $value
     local.get $index
     local.get $arr
-    call $check_if_null
     call \$${wasm_type_name}_set_array_elem
   )
   

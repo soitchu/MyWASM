@@ -1,14 +1,14 @@
+// @TODO convert this to a TS file
+
 // #----------------------------------------------------------------------
 // # Basic Function Definitions
 // #----------------------------------------------------------------------
 import { ASTParser } from "../Compiler/AST"
 import { Lexer } from "../Compiler/Lexer"
 import { StringBuffer } from "../Compiler/StringBuffer"
-import { WhileStmt } from "../Compiler/types";
-// import { test } from "./test";
-function len(x: any) { return x.length }
 import { expect, test } from "bun:test";
 
+function len(x) { return x.length }
 
 test("test_empty_input", () => {
     const in_stream = ''
@@ -930,7 +930,7 @@ test("test_simple_for_non_simple_condition", () => {
     `
 
     const p = new ASTParser(new Lexer(new StringBuffer(in_stream)), undefined, false).parse();
-    const assign_stmt: AssignStmt = p.fun_defs[0].stmts[0].assign_stmt;
+    const assign_stmt = p.fun_defs[0].stmts[0].assign_stmt;
 
     expect(len(p.fun_defs[0].stmts)).toBe(1)
 
@@ -1083,8 +1083,8 @@ test("test_while_statement_with_expression_and_body", () => {
 
     const p = new ASTParser(new Lexer(new StringBuffer(in_stream)), undefined, false).parse();
 
-    const whileStmt: WhileStmt = p.fun_defs[0].stmts[0]
-    const stmt: VarDecl = whileStmt.stmts[0]
+    const whileStmt = p.fun_defs[0].stmts[0]
+    const stmt = whileStmt.stmts[0]
 
     expect(len(p.fun_defs[0].stmts)).toBe(1)
     expect(len(whileStmt.stmts)).toBe(1)
@@ -1120,9 +1120,9 @@ test("test_if_statement_with_complex_expression_and_body", () => {
 
     const p = new ASTParser(new Lexer(new StringBuffer(in_stream)), undefined, false).parse();
 
-    const ifStmt: BasicIf = p.fun_defs[0].stmts[0].if_part
-    const elseIfStmt: BasicIf = p.fun_defs[0].stmts[0].else_ifs[0]
-    const stmt: VarDecl = ifStmt.stmts[0]
+    const ifStmt = p.fun_defs[0].stmts[0].if_part
+    const elseIfStmt = p.fun_defs[0].stmts[0].else_ifs[0]
+    const stmt = ifStmt.stmts[0]
 
     expect(len(p.fun_defs[0].stmts)).toBe(1)
     expect(len(ifStmt.stmts)).toBe(1)

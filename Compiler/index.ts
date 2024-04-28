@@ -14,6 +14,7 @@ interface CompilerOptions {
   unsafeArray: boolean | undefined;
   fastMath: boolean;
   returnBuffer: boolean;
+  rawCode?: boolean;
 }
 
 export async function init(
@@ -21,7 +22,7 @@ export async function init(
   output: string,
   options: CompilerOptions
 ) {
-  const lexer = new Lexer(new StringBuffer(readFileSync(input, "utf8")));
+  const lexer = new Lexer(new StringBuffer(options.rawCode ? input : readFileSync(input, "utf8")));
   const ast = new ASTParser(lexer);
   const program = ast.parse();
   const codeGen = new SemanticChecker(true, undefined, join(input, "../"));

@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/bun": "^1.1.0",
     "@types/node": "^20.12.2",
     "@types/prompt-sync": "^4.2.3"
   },

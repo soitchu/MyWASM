@@ -3,6 +3,8 @@ import rl from "readline-sync";
 
 
 export interface testWasmExports extends WebAssembly.Exports {
+    // @ts-expect-error
+    test: Function | undefined,
     main: Function,
     string_ini: (length: number) => number,
     string_ini_assign: (array: number, index: number, value: number) => void
@@ -15,7 +17,7 @@ interface DeallocQueue {
 }
 
 
-export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Array) {
+export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Array, zeroOutMemory: boolean = false) {
     const freed_mem = new MemoryManager();
     const intArray = new Int32Array(memory.buffer);
     // const nullError = new WebAssembly.Tag({ parameters: ["i32"] });
@@ -123,12 +125,14 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
             deallocate_memory(index: number, size: number) {
                 // let start = performance.now();
 
-                // const realIndex = index / 4;
-                // const realSize = size / 4;
-                
-                // for (let i = realIndex; i < (realIndex + realSize); i++) {
-                //     intArray[i] = 0;
-                // }
+                if(zeroOutMemory){
+                    const realIndex = index / 4;
+                    const realSize = size / 4;
+                    
+                    for (let i = realIndex; i < (realIndex + realSize); i++) {
+                        intArray[i] = 0;
+                    }
+                }
 
                 // toDealloc.index = index;
                 // toDealloc.size = size;
