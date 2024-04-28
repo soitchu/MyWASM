@@ -1,5 +1,5 @@
-import { ini, parseString, testWasmExports } from "../Runtime/WASM";
-import * as Compiler from "../Compiler/index.ts";
+import { ini, parseString, testWasmExports } from "../../Runtime/WASM";
+import * as Compiler from "../../Compiler/index.ts";
 import { expect, test } from "bun:test";
 
 const TRUE = 1,
@@ -20,7 +20,7 @@ async function runMyWASMCode(code: string) {
     rawCode: true,
   })) as Uint8Array;
 
-  const exports = (await ini(memory, wasmModuleBuffer, true)).instance
+  const exports = (await ini(memory, wasmModuleBuffer, true)).wasmModule!.instance
     .exports as testWasmExports;
 
   return [(exports.test as Function)(), memory];

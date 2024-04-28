@@ -3,9 +3,9 @@
 // #----------------------------------------------------------------------
 // # Basic Function Definitions
 // #----------------------------------------------------------------------
-import { ASTParser } from "../Compiler/AST"
-import { Lexer } from "../Compiler/Lexer"
-import { StringBuffer } from "../Compiler/StringBuffer"
+import { ASTParser } from "../../Compiler/AST"
+import { Lexer } from "../../Compiler/Lexer"
+import { StringBuffer } from "../../Compiler/StringBuffer"
 import { expect, test } from "bun:test";
 
 function len(x) { return x.length }

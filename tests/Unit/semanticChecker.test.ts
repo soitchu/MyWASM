@@ -1,8 +1,8 @@
-import { ASTParser } from "../Compiler/AST.ts";
-import { Lexer } from "../Compiler/Lexer.ts";
-import { SemanticChecker } from "../Compiler/SemanticChecker.ts";
-import { StringBuffer } from "../Compiler/StringBuffer.ts";
-import { SymbolTable } from "../Compiler/SymbolTable.ts";
+import { ASTParser } from "../../Compiler/AST.ts";
+import { Lexer } from "../../Compiler/Lexer.ts";
+import { SemanticChecker } from "../../Compiler/SemanticChecker.ts";
+import { StringBuffer } from "../../Compiler/StringBuffer.ts";
+import { SymbolTable } from "../../Compiler/SymbolTable.ts";
 import { expect, test } from "bun:test";
 
 function len(x: any) {
