@@ -4,15 +4,15 @@ MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it
 MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. For binaryen, the O4 flag was passed, and for gcc the O3 flag was used.
 
 ## Finding the first n primes
-<img src="https://github.com/soitchu/MyWASM/assets/66003387/7632da42-9ede-4e3e-8fb2-9c7c6fd74859" height="350" />
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/12d405f0-ba64-4ff7-a80f-7819591c02a9" width="650" />
 
 ## Merge sorting an array
-<img src="https://github.com/soitchu/MyWASM/assets/66003387/b5fb9ea2-f077-482b-b523-056295ccf3a9" height="350" />
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/b734817e-d8d3-4194-9f0e-f44f4f704ad2" width="650" />
 
 Note: The `unsafe-array` flag skips checking out-of-bounds access and null checking, which is similar to how arrays in C work.
 
 The system used to run these benchmarks:
-<img src="https://github.com/soitchu/MyWASM/assets/66003387/f910bfc6-cbd6-4e26-8807-067a7c359c4c" height="350" />
+<img src="https://github.com/soitchu/MyWASM/assets/66003387/f910bfc6-cbd6-4e26-8807-067a7c359c4c" width="650" />
 
 
 # Design
