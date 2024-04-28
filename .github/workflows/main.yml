@@ -3,25 +3,14 @@ permissions:
   contents: write
 on:
   push:
-    branches: ["*"]
+    branches: ["main"]
   workflow_dispatch:
     inputs:
       name:
         description: "World"
         default: "Hello"
-jobs:
-  test:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Cloning the repo
-          uses: actions/checkout@v4
-        
-        - name: Testing
-          run: |
-            bun test
-        
+jobs:      
   build-x86:
-    if: github.head_ref == "main" || github.ref_name == "main"
     needs: test
     runs-on: ${{ matrix.os }}
     environment: build
@@ -43,7 +32,7 @@ jobs:
           
         - name: Install the modules
           run: |
-            ls
+            bun test
             make install
             make build
         - name: Upload artifact
