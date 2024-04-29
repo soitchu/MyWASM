@@ -17,7 +17,8 @@ const DONT_COPY_STRINGS_FOR = [
     'delete_string',
     'get_array_pointer',
     'string_to_array_int',
-    'get'
+    'get',
+    'main_ini_string'
 ];
 
 const SUPPORTED_BINARY_OPS = {
@@ -1054,6 +1055,9 @@ export class SemanticChecker extends Visitor{
             this.output(` (result ${WASM.getWASMType(func_return_type, fun_def.return_type.is_array)})`)
         }
 
+        this.output(EOL)
+        this.output_with_indent("(local $tmp i32)");
+
         for(const stmt of stmt_buffers){
             this.output(EOL)
             this.output(stmt)
@@ -1305,7 +1309,6 @@ export class SemanticChecker extends Visitor{
 
         const func_info = this.functions[call_expr.fun_name.lexeme]
         const should_copy_string = !(DONT_COPY_STRINGS_FOR.includes(call_expr.fun_name.lexeme))
-                
         if(call_expr.args.length !== func_info.params.length){
             this.error(`(18) The call expression must have the same number of arguments as \"${func_info.fun_name.lexeme}\"`, call_expr.fun_name)
         }
@@ -1604,7 +1607,7 @@ export class SemanticChecker extends Visitor{
             }
 
             this.output_in_new_line(`i32.const ${this.string_map[value.lexeme]}`)
-            this.output_in_new_line(`call $copy_string`)
+            // this.output_in_new_line(`call $copy_string`)
             
         }   
         else{
@@ -1670,7 +1673,7 @@ export class SemanticChecker extends Visitor{
                 
                 this.output_in_new_line(`i32.const ${this.get_struct_total_size(struct_def)}`)
                 this.output_in_new_line("call $allocate_struct")
-                this.output_in_new_line("global.set $tmp")
+                this.output_in_new_line("local.set $tmp")
                 
                 for(let i = 0; i < params.length; i++){
                     const param = params[i]
@@ -1689,13 +1692,13 @@ export class SemanticChecker extends Visitor{
 
                     const size = WASM.getWASMSize(struct_fields[i].data_type)
 
-                    this.output_in_new_line("global.get $tmp")
+                    this.output_in_new_line("local.get $tmp")
                     this.output_in_new_line(`i32.const ${this.get_field_cummulative_size(struct_def, struct_fields[i].var_name.lexeme)}`)
                     this.output_in_new_line(`call \$${WASM.getWASMType(curr_type.type_name, curr_type.is_array)}_assign_to_struct`)
                 
                 }
 
-                this.output_in_new_line("global.get $tmp")
+                this.output_in_new_line("local.get $tmp")
 
                 this.curr_type = struct_type
             }
