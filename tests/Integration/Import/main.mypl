@@ -1,4 +1,4 @@
-import "b.mypl" as B;
+import "imported.mypl" as B;
 
 export function void main() {
     B::importedStruct x = B::importedFunction();

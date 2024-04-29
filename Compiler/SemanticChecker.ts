@@ -1304,7 +1304,7 @@ export class SemanticChecker extends Visitor{
         }
 
         const func_info = this.functions[call_expr.fun_name.lexeme]
-        const should_copy_string = !(call_expr.fun_name.lexeme in DONT_COPY_STRINGS_FOR)
+        const should_copy_string = !(DONT_COPY_STRINGS_FOR.includes(call_expr.fun_name.lexeme))
                 
         if(call_expr.args.length !== func_info.params.length){
             this.error(`(18) The call expression must have the same number of arguments as \"${func_info.fun_name.lexeme}\"`, call_expr.fun_name)

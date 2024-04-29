@@ -103,7 +103,11 @@ export function getPrintFunction(data_type: DataType) {
 export function getLengthFunction(data_type: DataType) {
   const type_name = data_type.type_name.token_type;
 
-  if ([TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)) {
+  if (data_type.is_array) {
+    return "length";
+  } else if (
+    [TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)
+  ) {
     return "length_string";
   }
 
