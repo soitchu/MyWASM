@@ -1956,7 +1956,7 @@ export class SemanticChecker extends Visitor{
             // # make our type checking overlords happy
             if(!did_curr_change && last_type !== undefined){
                 // TODO uncomment
-                // this.error(`(37) Cannot read "${name.lexeme}" from "${this.type_to_string(curr_type)}"`, name)                
+                this.error(`(37) Cannot read "${name.lexeme}" from "${this.type_to_string(curr_type)}"`, name)                
             }
 
             last_type = curr_type

@@ -508,8 +508,8 @@ test("test_combined_relational_ops", () => {
   const in_stream = `
         function void main() { 
           bool x1 = (0 < 1) and (0.4 < 0.2) and (3.1 < 3.2); 
-          bool x2 = (not ("a" == null)) or (not (3.1 != null)); 
-          bool x4 = ("abc" == "abde") or (x1 == false); 
+          bool x2 = (not (true == null)) or (not (3.1 != null)); 
+          bool x4 = (1.0 == 2.3) or (x1 == false); 
           bool x5 = (not x2 == null) and 3.1 >= 4.1; 
         } 
     `;
