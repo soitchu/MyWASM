@@ -20,6 +20,7 @@ async function runMyWASMFile(entryFile: string) {
   return await Runtime.init("", false, wasmBuffer, 100, true, true) as string;
 }
 
+const output = await runMyWASMFile("Import/main.mypl");
 test("import_system_1", async () => {
   const output = await runMyWASMFile("Import/main.mypl");
 

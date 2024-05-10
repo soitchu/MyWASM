@@ -57,7 +57,7 @@ function int string_length(String str) {
   return str_length;
 }
 
-function int string_delete(String str) {
+function void string_delete(String str) {
   String current = str;
 
   while(not (current == null)) {

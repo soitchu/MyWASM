@@ -20,6 +20,7 @@ const DONT_COPY_STRINGS_FOR = [
     'get',
     'main_ini_string',
     'main_string_append',
+    'string_append',
     'main_string_copy',
 ];
 
@@ -736,7 +737,8 @@ export class SemanticChecker extends Visitor{
         }
         else if(var_type.is_array){
             if ([ast.TokenType.DOUBLE_TYPE, ast.TokenType.DOUBLE_VAL].includes(token_type)){
-                this.error(`(64) Cannot delete f64 arrays yet`, delete_stmt.var_rvalue.path[0].var_name)
+                this.output_in_new_line("call $delete_f64_array")
+                // this.error(`(64) Cannot delete f64 arrays yet`, delete_stmt.var_rvalue.path[0].var_name)
             }
             else{
                 this.output_in_new_line("call $delete_i32_array")
@@ -1138,7 +1140,7 @@ export class SemanticChecker extends Visitor{
 
         if(!this.match_type(this.current_return_type, expr_type)){
             // TODO uncomment
-            // this.error(`(11) Return expression's type (\"${this.type_to_string(expr_type)}\") does not match function's return type (\"${this.type_to_string(this.current_return_type)}\")`, this.get_first_rvalue_token(return_stmt.expr)) 
+            this.error(`(11) Return expression's type (\"${this.type_to_string(expr_type)}\") does not match function's return type (\"${this.type_to_string(this.current_return_type)}\")`, this.get_first_rvalue_token(return_stmt.expr)) 
         }   
     }  
 
@@ -1182,7 +1184,7 @@ export class SemanticChecker extends Visitor{
         
         // TODO uncomment
         if (value_type !== undefined && !this.match_type(var_type, value_type)){             
-            // this.error(`(12) Type mismatch. Tried assigning \"${this.type_to_string(value_type)}\" to \"${this.type_to_string(var_type)}\"`, var_decl.var_def.var_name)
+            this.error(`(12) Type mismatch. Tried assigning \"${this.type_to_string(value_type)}\" to \"${this.type_to_string(var_type)}\"`, var_decl.var_def.var_name)
         }       
 }
         
@@ -1385,7 +1387,7 @@ export class SemanticChecker extends Visitor{
                 // @ts-expect-error
                 if(!this.match_any_type(this.overloaded_functions[func_name][i.toString()], curr_type)){
                     // # TODO make the error message better
-                    // this.error(`(19) Call expression's arguments' types must match that of the function \"${func_name}\"`, this.get_first_rvalue_token(arg))
+                    this.error(`(19) Call expression's arguments' types must match that of the function \"${func_name}\"`, this.get_first_rvalue_token(arg))
                 }
             }
                     
@@ -1393,10 +1395,10 @@ export class SemanticChecker extends Visitor{
                 // TODO uncomment
                 if(!this.match_type(func_info.params[i].data_type, curr_type)){
                     // # TODO handle 1st 2nd 3rd 11th 12th 13th
-                    // this.error(
-                    //     `(20) function "${func_name}"\'s ${i + 1}th argument has the type "${this.type_to_string(func_info.params[i].data_type)}", but got "${this.type_to_string(curr_type)}"`,
-                    //     call_expr.fun_name
-                    // )
+                    this.error(
+                        `(20) function "${func_name}"\'s ${i + 1}th argument has the type "${this.type_to_string(func_info.params[i].data_type)}", but got "${this.type_to_string(curr_type)}"`,
+                        call_expr.fun_name
+                    )
                 }
             }
         }

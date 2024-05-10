@@ -1,41 +1,35 @@
-export function void main() {
-  string b = "1002";
-  string c = "World";
-  int a = stoi(b);
-  string d = itos(a);
-  bool e = false;
-  double f = 0.0 - 123.456;
-  string g = dtos(f);
-  string h = g;
-  string i = itos(0 - 10);
+    struct Node {
+      int value;
+      Node next;
+      Map map;
+    }
 
-  print(i);
-  delete h;
-  print(g);
-  print("\n");
-  print(a);
-  print("\n");
-  print(e);
-  print("\n");
-  print(d);
+    struct Map {
+        int x;
+        array int values;
+    }
 
-  delete g;
-  delete i;
-  delete d;
-  delete b;
-  delete c;
-}
+    export function int main() {
+        Map a = new Map(0, null);
+        array int vals = new int[20];
+        a.values = vals;
+
+        a.values[0] = 1;
+        a.values[1] = 1;
+
+        for(int i = 2; i < 20; i = i + 1) {
+            a.values[i] =  a.values[i - 1] + a.values[i - 2];
+        }
+
+        Node first = new Node(0, null, null);
+        Node second = new Node(1, null, null);
+        Node third = new Node(2, null, null);
+
+        first.next = second;
+        second.next = third;
+        third.next = third;
+        third.map = a;
 
 
-
-// Optimize this
-
-
-// function int string_print(String str) {
-//   String current = str;
-
-//   while(not (current == null)) {
-//     print(array_int_to_string(current.value));
-//     current = current.next;
-//   }
-// }
+        return first.next.next.next.next.next.map.values[19];
+    }

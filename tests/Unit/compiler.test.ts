@@ -1,11 +1,11 @@
-import { ini, parseString, testWasmExports } from "../../Runtime/WASM";
+import { ini, parseString, parseStringStruct, testWasmExports } from "../../Runtime/WASM";
 import * as Compiler from "../../Compiler/index.ts";
 import { expect, test } from "bun:test";
 
 const TRUE = 1,
   FALSE = 0;
   
-async function runMyWASMCode(code: string) {
+async function runMyWASMCode(code: string): Promise<[number, WebAssembly.Memory]> {
   const memory = new WebAssembly.Memory({
     initial: 1,
     maximum: 100,
@@ -702,13 +702,15 @@ test("string_concat_1", async () => {
     export function int test() {
       array int a = new int[10];
       string s1 = "hello";
-      string s2 = " world" + s1 + s1;
+      string s2 = " world";
+
+      string_append(s2, s1);
 
       return length(s2);
     }
   `);
 
-  expect(result).toBe(6 + 5 + 5);
+  expect(result).toBe("hello world".length);
 });
 
 test("string_concat_2", async () => {
@@ -718,56 +720,104 @@ test("string_concat_2", async () => {
       string s1 = "hel";
       string s2 = "lo";
       array double b = new double[40];
-      string s3 = s1 + s2 + " world";
+      string s3 = " world";
+      
+      string_append(s1, s2);
+      string_append(s1, s3);
 
-      return s3;
+      return s1;
     }
   `);
 
-  const stringPosition = Math.floor(result / 4);
-  expect(parseString(stringPosition, memory)).toBe("hello world");
+  const resultantString = parseStringStruct(result / 4, memory);
+
+  expect(resultantString).toBe("hello world");
 });
 
 test("string_concat_3", async () => {
   const [result, memory] = await runMyWASMCode(`
     export function string test() {
-        string a = "h" + "e" + "l" + "l" + "o" + " w" + "o" + "r" + "l" + "d";
-        string b = "hello world";
+      array double a = new double[40];
+      string s1 = "hel";
+      string s2 = "lo";
+      array double b = new double[40];
+      string s3 = " world";
+      
+      string_append(s1, s2);
+      string_append(s1, s3);
 
-        return b;
+      delete a;
+      delete s1;
+      delete s2;
+      delete b;
+      delete s3;
     }
   `);
 
-  expect(result).toBe(120);
+  let intArray = new Int32Array(memory.buffer);
+  const offset = intArray[1];
+
+  expect(offset).toBe(64);
+  
+  intArray = new Int32Array(memory.buffer, offset);
+
+  // Checking if the memory was cleaned up well
+  expect(intArray.every((x) => x === 0)).toBe(true);
 });
+
 
 test("string_concat_4", async () => {
   const [result, memory] = await runMyWASMCode(`
     export function string test() {
-        string a = "h" + "e" + "l" + "l" + "o" + " w" + "o" + "r" + "l" + "d";
-        string b = "hello world";
+        string a = "hello";
+        string second = "world";
+        
+        string_append(a, second);
 
-        return a;
+        string c = "ed";
+        string_append(c, a);
+
+
+        delete a;
+        delete second;
+
+        return c;
     }
   `);
 
-  expect(result).toBe(180);
+  const resultantString = parseStringStruct(result / 4, memory);
+
+  expect(resultantString).toBe("edhelloworld");
 });
 
 test("string_concat_5", async () => {
   const [result, memory] = await runMyWASMCode(`
-    export function string test() {
-        string a = "h" + "e" + "l" + "l" + "o" + " w" + "o" + "r" + "l" + "d";
+    export function void test() {
+        string a = "hello";
+        string second = "world";
+        
+        string_append(a, second);
+
         string c = "ed";
-        string b = "ed" + "hello world" + "_" + "w" + a;
-      
-        return b;
+        string_append(c, a);
+
+
+        delete a;
+        delete second;
+        delete c;
     }
   `);
+  
+  let intArray = new Int32Array(memory.buffer);
+  const offset = intArray[1];
 
-  const resultantString = parseString(result / 4, memory);
+  expect(offset).toBe(68);
+  
+  intArray = new Int32Array(memory.buffer, offset);
 
-  expect(resultantString).toBe("edhello world_whello world");
+  // Checking if the memory was cleaned up well
+  expect(intArray.every((x) => x === 0)).toBe(true);
+
 });
 
 test("string_reassignment", async () => {
@@ -780,8 +830,8 @@ test("string_reassignment", async () => {
     }
   `);
 
-  expect(parseString(result / 4, memory)).toBe("hello world");
-  expect(parseString(result / 4 + "hello world".length + 1, memory)).toBe(
+  expect(parseStringStruct(result / 4, memory)).toBe("hello world");
+  expect(parseStringStruct(result / 4 + 5, memory)).toBe(
     "hello world"
   );
 });

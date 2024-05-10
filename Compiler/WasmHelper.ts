@@ -27,7 +27,8 @@ export const BUILT_INS = [
   "sleep",
   "random",
   "length_string",
-  "string_print"
+  "string_print",
+  "string_append"
 ];
 
 const token_to_op: { [key: number]: string | Object } = {};
@@ -409,7 +410,7 @@ function generatePrintFunctions() {
     return
   )
 
-  (func $string_print (param $main_main_string_print0_str i32) (result i32)
+  (func $string_print (param $main_main_string_print0_str i32)
   (local $main_main_string_print0_current i32)
 
    local.get $main_main_string_print0_str
@@ -455,7 +456,321 @@ function generatePrintFunctions() {
 }
 
 function get_string_functions() {
-  return "";
+  return `
+  (func $string_append (param $main_main_string_append0_string_1 i32) (param $main_main_string_append0_string_2 i32)
+   (local $main_main_string_append0_current i32)
+   (local $main_main_string_append0_last_string i32)
+  (local $tmp i32)
+
+    local.get $main_main_string_append0_string_2
+    call $main_string_copy
+    local.set $main_main_string_append0_string_2
+
+    local.get $main_main_string_append0_string_1
+    local.set $main_main_string_append0_current
+
+    i32.const 0
+    local.set $main_main_string_append0_last_string
+
+    (loop $loop1
+      local.get $main_main_string_append0_current
+      i32.const 0
+      i32.eq
+      i32.const -1
+      i32.mul
+      i32.const 1
+      i32.add
+      if
+        local.get $main_main_string_append0_current
+        local.set $main_main_string_append0_last_string
+        local.get $main_main_string_append0_current
+        call $check_if_null
+        i32.const 8
+        i32.add
+        i32.load
+        local.set $main_main_string_append0_current
+        br $loop1
+      end
+    )
+
+    local.get $main_main_string_append0_string_2
+    local.get $main_main_string_append0_last_string
+    call $check_if_null
+    i32.const 8
+    call $i32_assign_to_struct
+    i32.const 0
+    return
+  )
+  
+  (func $main_string_ini (param $main_main_string_ini0_str i32) (result i32)
+  (local $tmp i32)
+
+    i32.const 16
+    call $allocate_struct
+    local.set $tmp
+    local.get $main_main_string_ini0_str
+    call $string_to_array_int
+    local.get $tmp
+    i32.const 0
+    call $i32_assign_to_struct
+    local.get $main_main_string_ini0_str
+    call $length_string
+    local.get $tmp
+    i32.const 4
+    call $i32_assign_to_struct
+    i32.const 0
+    local.get $tmp
+    i32.const 8
+    call $i32_assign_to_struct
+    i32.const 1
+    local.get $tmp
+    i32.const 12
+    call $i32_assign_to_struct
+    local.get $tmp
+    return
+    i32.const 0
+    return
+  )
+
+  (func $main_string_append (param $main_main_string_append0_string_1 i32) (param $main_main_string_append0_string_2 i32)
+   (local $main_main_string_append0_current i32)
+   (local $main_main_string_append0_last_string i32)
+  (local $tmp i32)
+
+    local.get $main_main_string_append0_string_2
+    call $main_string_copy
+    local.set $main_main_string_append0_string_2
+
+    local.get $main_main_string_append0_string_1
+    local.set $main_main_string_append0_current
+
+    i32.const 0
+    local.set $main_main_string_append0_last_string
+
+    (loop $loop1
+      local.get $main_main_string_append0_current
+      i32.const 0
+      i32.eq
+      i32.const -1
+      i32.mul
+      i32.const 1
+      i32.add
+      if
+        local.get $main_main_string_append0_current
+        local.set $main_main_string_append0_last_string
+        local.get $main_main_string_append0_current
+        call $check_if_null
+        i32.const 8
+        i32.add
+        i32.load
+        local.set $main_main_string_append0_current
+        br $loop1
+      end
+    )
+
+    local.get $main_main_string_append0_string_2
+    local.get $main_main_string_append0_last_string
+    call $check_if_null
+    i32.const 8
+    call $i32_assign_to_struct
+    i32.const 0
+    return
+  )
+
+  (func $main_string_copy (param $main_main_string_copy0_str i32) (result i32)
+   (local $main_main_string_copy0_value i32)
+   (local $main_main_string_copy_if20_len i32)
+   (local $main_main_string_copy_if2_for10_i i32)
+  (local $tmp i32)
+
+    local.get $main_main_string_copy0_str
+    i32.const 0
+    i32.eq
+    if
+      i32.const 0
+      return
+    end
+
+    local.get $main_main_string_copy0_str
+    call $check_if_null
+    i32.const 0
+    i32.add
+    i32.load
+    local.set $main_main_string_copy0_value
+
+    local.get $main_main_string_copy0_str
+    call $check_if_null
+    i32.const 12
+    i32.add
+    i32.load
+    i32.const -1
+    i32.mul
+    i32.const 1
+    i32.add
+    if
+      local.get $main_main_string_copy0_value
+      call $length
+      local.set $main_main_string_copy_if20_len
+      local.get $main_main_string_copy_if20_len
+      call $i32_new_array
+      local.set $main_main_string_copy0_value
+      i32.const 0
+      local.set $main_main_string_copy_if2_for10_i
+      (loop $loop1
+        local.get $main_main_string_copy0_str
+        call $check_if_null
+        i32.const 0
+        i32.add
+        i32.load
+        local.get $main_main_string_copy_if2_for10_i
+        call $i32_get_array_elem_alt
+        local.get $main_main_string_copy_if2_for10_i
+        local.get $main_main_string_copy0_value
+        call $i32_set_array_elem
+        local.get $main_main_string_copy_if2_for10_i
+        i32.const 1
+        i32.add
+        local.set $main_main_string_copy_if2_for10_i
+        local.get $main_main_string_copy_if2_for10_i
+        local.get $main_main_string_copy_if20_len
+        i32.lt_s
+        br_if $loop1
+      )
+    end
+
+    i32.const 16
+    call $allocate_struct
+    local.set $tmp
+    local.get $main_main_string_copy0_value
+    local.get $tmp
+    i32.const 0
+    call $i32_assign_to_struct
+    local.get $main_main_string_copy0_str
+    call $check_if_null
+    i32.const 4
+    i32.add
+    i32.load
+    local.get $tmp
+    i32.const 4
+    call $i32_assign_to_struct
+    local.get $main_main_string_copy0_str
+    call $check_if_null
+    i32.const 8
+    i32.add
+    i32.load
+    call $main_string_copy
+    local.get $tmp
+    i32.const 8
+    call $i32_assign_to_struct
+    local.get $main_main_string_copy0_str
+    call $check_if_null
+    i32.const 12
+    i32.add
+    i32.load
+    local.get $tmp
+    i32.const 12
+    call $i32_assign_to_struct
+    local.get $tmp
+    return
+    i32.const 0
+    return
+  )
+
+  (func $main_string_length (param $main_main_string_length0_str i32) (result i32)
+   (local $main_main_string_length0_current i32)
+   (local $main_main_string_length0_str_length i32)
+  (local $tmp i32)
+
+    local.get $main_main_string_length0_str
+    local.set $main_main_string_length0_current
+
+    i32.const 0
+    local.set $main_main_string_length0_str_length
+
+    (loop $loop1
+      local.get $main_main_string_length0_current
+      i32.const 0
+      i32.eq
+      i32.const -1
+      i32.mul
+      i32.const 1
+      i32.add
+      if
+        local.get $main_main_string_length0_str_length
+        local.get $main_main_string_length0_current
+        call $check_if_null
+        i32.const 4
+        i32.add
+        i32.load
+        i32.add
+        local.set $main_main_string_length0_str_length
+        local.get $main_main_string_length0_current
+        call $check_if_null
+        i32.const 8
+        i32.add
+        i32.load
+        local.set $main_main_string_length0_current
+        br $loop1
+      end
+    )
+
+    local.get $main_main_string_length0_str_length
+    return
+    i32.const 0
+    return
+  )
+
+  (func $main_string_delete (param $main_main_string_delete0_str i32)
+   (local $main_main_string_delete0_current i32)
+   (local $main_main_string_delete_while10_tmp i32)
+  (local $tmp i32)
+
+    local.get $main_main_string_delete0_str
+    local.set $main_main_string_delete0_current
+
+    (loop $loop1
+      local.get $main_main_string_delete0_current
+      i32.const 0
+      i32.eq
+      i32.const -1
+      i32.mul
+      i32.const 1
+      i32.add
+      if
+        local.get $main_main_string_delete0_current
+        call $check_if_null
+        i32.const 8
+        i32.add
+        i32.load
+        local.set $main_main_string_delete_while10_tmp
+        local.get $main_main_string_delete0_current
+        call $check_if_null
+        i32.const 12
+        i32.add
+        i32.load
+        i32.const 0
+        i32.eq
+        if
+          local.get $main_main_string_delete0_current
+          call $check_if_null
+          i32.const 0
+          i32.add
+          i32.load
+          call $delete_i32_array
+        end
+        local.get $main_main_string_delete0_current
+        call $delete_struct
+        local.get $main_main_string_delete_while10_tmp
+        local.set $main_main_string_delete0_current
+        br $loop1
+      end
+    )
+    i32.const 0
+    return
+  )
+
+  
+  `;
 //   return `  (func $main_string_ini (param $main_main_string_ini0_str i32) (result i32)
 //   (local $tmp i32)
 
@@ -791,6 +1106,22 @@ export function getWASMCoreFunctions(unsafe = false) {
     i32.const 1
     i32.add
     i32.mul
+    call $deallocate_memory
+    i32.const 0
+    return
+  )
+
+  (func $delete_f64_array (param $delete_f64_array0_arr i32)
+    local.get $delete_f64_array0_arr
+    i32.const 4
+    i32.sub
+    
+    i32.const 8
+    local.get $delete_f64_array0_arr
+    call $length
+    i32.mul
+    i32.const 1
+    i32.add
     call $deallocate_memory
     i32.const 0
     return
@@ -1613,6 +1944,11 @@ export const DATA_TYPES = {
   ANY_STRUCT: new ast.DataType(
     true,
     ast.Token(ast.TokenType.ID, "any_struct", 0, 0),
+    undefined
+  ),
+  String: new ast.DataType(
+    false,
+    ast.Token(ast.TokenType.ID, "String", 0, 0),
     undefined
   ),
 };

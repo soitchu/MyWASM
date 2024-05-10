@@ -188,3 +188,24 @@ export function parseString(startIndex: number, memory: WebAssembly.Memory) {
 
     return resultantString;
 }
+
+export function parseStringStruct(startIndex: number, memory: WebAssembly.Memory, resultantString = "") {
+
+    const intArray = new Int32Array(memory.buffer, 0);
+    const stringPointer = intArray[startIndex];
+    const mainStringPointer = stringPointer / 4;
+    const length = intArray[stringPointer / 4 - 1];
+
+
+    for (let i = 0; i < length; i++) {
+        resultantString += String.fromCharCode(intArray[mainStringPointer + i]);
+    }
+    
+    const nextStringPointer = intArray[startIndex + 2];
+
+    if(nextStringPointer !== 0) {
+        resultantString = parseStringStruct(nextStringPointer / 4, memory, resultantString);
+    }
+
+    return resultantString;
+}
