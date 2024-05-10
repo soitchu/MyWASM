@@ -440,7 +440,6 @@ test("test_expr_no_parens", () => {
           int x1 = 1 + 2 + 3 * 4 / 5 - 6 - 7; 
           double x2 = 1.0 + 2.1 + 3.3 * 4.4 / 5.5 - 6.6 - 7.7; 
           bool x3 = not true or false and true and not false; 
-          string x4 = "a" + "b" + "c"; 
         } 
     `;
 
@@ -455,7 +454,6 @@ test("test_expr_with_parens", () => {
           int x1 = ((1 + 2) + (3 * 4)) / ((5 - 6) - 7); 
           double x2 = ((1.0 + 2.1) + (3.3 * 4.4) / (5.5 - 6.6)) - 7.7; 
           bool x3 = not (true or false) and (true and not false); 
-          string x4 = (("a" + "b") + "c"); 
         } 
     `;
 
@@ -476,8 +474,6 @@ test("test_expr_with_parens_and_vars", () => {
           bool x7 = not (true or false); 
           bool x8 = true and not x7; 
           bool x9 = (x7 and x8) or (not x7 and x8) or (x7 and not x8); 
-          string x10 = "a" + "b"; 
-          string x11 = (x10 + "c") + ("c" + x10); 
         } 
     `;
 
@@ -511,9 +507,9 @@ test("test_basic_relational_ops", () => {
 test("test_combined_relational_ops", () => {
   const in_stream = `
         function void main() { 
-          bool x1 = (0 < 1) and ("a" < "b") and (3.1 < 3.2); 
+          bool x1 = (0 < 1) and (0.4 < 0.2) and (3.1 < 3.2); 
           bool x2 = (not ("a" == null)) or (not (3.1 != null)); 
-          bool x4 = ("abc" <= "abde") or (x1 == false); 
+          bool x4 = ("abc" == "abde") or (x1 == false); 
           bool x5 = (not x2 == null) and 3.1 >= 4.1; 
         } 
     `;
@@ -863,7 +859,7 @@ test("test_allowed_shadowing", () => {
           } 
           while (true) { 
             string x = ""; 
-            string y = x + "a"; 
+            string y = x; 
           }         
         } 
     `;

@@ -1,77 +1,35 @@
-function int randomInt(int start, int end) {
-  return dtoi(random() * itod(end - start + 1));
-}
-
-function void merge(array int arr, int p, int q, int r) {
-  int n1 = q - (p - 1);
-  int n2 = r - q;
-
-  array int L = new int[n1];
-  array int M = new int[n1];
-
-  for (int i = 0; i < n1; i = i + 1){
-    L[i] = arr[p + i];
-  }
-
-  for (int j = 0; j < n2; j = j + 1){
-    M[j] = arr[q + 1 + j];
-  }
-
-  int i = 0;
-  int j = 0;
-  int k = p;
-
-  while ((i < n1) and (j < n2)) {
-    if (L[i] <= M[j]) {
-      arr[k] = L[i];
-      i = i + 1;
-    } else {
-      arr[k] = M[j];
-      j = j + 1;
+    struct Node {
+      int value;
+      Node next;
+      Map map;
     }
-    k = k + 1;
-  }
 
-  while (i < n1) {
-    arr[k] = L[i];
-    i = i + 1;
-    k = k + 1;
-  }
+    struct Map {
+        int x;
+        array int values;
+    }
 
-  while (j < n2) {
-    arr[k] = M[j];
-    j = j + 1;
-    k = k + 1;
-  }
+    export function int main() {
+        Map a = new Map(0, null);
+        array int vals = new int[20];
+        a.values = vals;
 
-  delete L;
-  delete M;
-}
+        a.values[0] = 1;
+        a.values[1] = 1;
 
-function void mergeSort(array int arr, int l, int r) {
-  if (l < r) {
+        for(int i = 2; i < 20; i = i + 1) {
+            a.values[i] =  a.values[i - 1] + a.values[i - 2];
+        }
 
-    int m = l + (r - l) / 2;
+        Node first = new Node(0, null, null);
+        Node second = new Node(1, null, null);
+        Node third = new Node(2, null, null);
 
-    mergeSort(arr, l, m);
-    mergeSort(arr, m + 1, r);
+        first.next = second;
+        second.next = third;
+        third.next = third;
+        third.map = a;
 
-    merge(arr, l, m, r);
-  }
-}
 
-export function void main() {
-  array int a = new int[10];
-
-  delete a;
-  // int size = 100000;
-  // array int arr = new int[size];
-  // array int L = null;
-  // array int M = null;
-
-  // for(int i = 0; i < size; i = i + 1){
-  //   arr[i] = size - i;
-  // }
-
-  // mergeSort(arr, 0, size - 1);
-}
+        return first.next.next.next.next.next.map.values[19];
+    }

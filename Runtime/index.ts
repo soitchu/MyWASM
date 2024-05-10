@@ -23,11 +23,18 @@ export async function init(
     .exports as WASM.testWasmExports;
   const start = performance.now();
 
+  if (debug) {
+    console.log("stdout:");
+  }
+
   wasmInstance.main();
 
   if (debug) {
-    console.log(performance.now() - start);
+    console.log("\n==========================");
+    console.log(`Time taken: ${performance.now() - start}ms`);
+    console.log("\nMemory:");
     console.log(new Uint32Array(memory.buffer));
+    console.log("==========================\n");
   }
 
   if(captureOutput) {
