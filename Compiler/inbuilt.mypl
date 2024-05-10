@@ -1,0 +1,227 @@
+struct String {
+  array int value;
+  int length;
+  String next;
+  bool pooled;
+}
+
+function String string_ini(String str) {
+  return new String(string_to_array_int(str), length_string(str), null, true);
+}
+
+function void string_append(String string_1, String string_2) {
+  string_2 = string_copy(string_2);
+  String current = string_1;
+  String last_string = null;
+
+  while(not (current == null)) {
+    last_string = current;
+    current = current.next;
+  }
+
+  last_string.next = string_2;
+}
+
+// Double check if deep copy is necessary
+function String string_copy(String str) {
+  if(str == null) {
+    return null;
+  }
+
+  array int value = str.value;
+
+
+  // If the string isn't pooled, then we need to 
+  // copy the whole string
+  if(not str.pooled) {
+    int len = length(value);
+    value = new int[len];
+
+    for(int i = 0; i < len; i = i + 1) {
+      value[i] = str.value[i];
+    }
+  }
+
+  return new String(value, str.length, string_copy(str.next), str.pooled);
+}
+
+function int string_length(String str) {
+  String current = str;
+  int str_length = 0;
+
+  while(not (current == null)) {
+    str_length = str_length + current.length;
+    current = current.next;
+  }
+
+  return str_length;
+}
+
+function int string_delete(String str) {
+  String current = str;
+
+  while(not (current == null)) {
+    String tmp = current.next;
+
+    if(current.pooled == false) {
+      delete current.value;
+    }
+
+    delete current;
+
+    current = tmp;
+  }
+}
+
+// function int stoi_(String s) {
+//   String current = s;
+//   int val = 0;
+
+//   while(current != null) {
+//     array int int_string = string_to_array_int(current.value);
+
+//     int length = length(int_string);
+
+//     for(int i = 0; i < length; i = i + 1) {
+//       val = (val * 10) + (int_string[i] - 48);
+//     }
+
+//     current = current.next;
+//   }
+
+//   delete s;
+//   return val;
+// } 
+
+
+// function string itos_(int a) {
+//   bool is_neg = a < 0;
+//   int size = 0;
+
+//   if(a < 0) {
+//     a = a * (0 - 1);
+//   }
+
+//   int val = a;
+
+//   while(val > 0) {
+//     size = size + 1;
+//     val = val / 10;
+//   }
+
+//   if(is_neg) {
+//     size = size + 1;
+//   }
+
+//   array int result = new int[size];
+
+//   if(is_neg) {
+//     result[0] = 45;
+//   }
+
+//   val = a;
+
+//   int index = 0;
+
+//   while(val > 0) {
+//     result[size - (index + 1)] = 48 + (val % 10);
+//     index = index + 1;
+//     val = val / 10;
+//   }
+
+//   return new String(result, size, null, false);
+// }
+
+// function string dtos_(double d) {
+//   int precision = 10;
+//   int total_length = precision + 1;
+//   bool is_neg = (d < 0.0);
+
+//   if(is_neg) {
+//     // Since we need to add the negative sign
+//     total_length = total_length + 1;
+//     d = d * (0.0 - 1.0);
+//   }
+
+//   String int_part_string = itos_(dtoi(d));
+//   array int int_part = int_part_string.value;
+//   int int_length = length(int_part);
+//   int offset = 0;
+
+//   // print(int_part[0]);
+//   // print("\n");
+//   // print(int_part_string);
+
+//   total_length = total_length + int_length;
+
+//   double fract_part = d - itod(dtoi(d));
+//   array int result = new int[total_length]; 
+
+//   if(is_neg) {
+//     // Negative sign
+//     result[offset] = 45;
+//     offset = offset + 1;
+//   }
+
+//   // Copying the int_part
+//   for(int i = 0; i < int_length; i = i + 1) {
+//     result[offset] = int_part[i];
+//     offset = offset + 1;
+//   }
+  
+//   // Decimal point
+//   result[offset] = 46;
+//   offset = offset + 1;
+  
+//   // Getting the fractional part
+//   for (int i = 0; i < precision; i = i + 1) {
+//     fract_part = fract_part * 10.0;
+//     int digit = dtoi(fract_part);
+//     result[offset] = 48 + digit; 
+//     fract_part = fract_part - itod(digit);
+//     offset = offset + 1;
+//   }
+
+//   delete int_part_string;
+//   delete int_part;
+
+//   return new String(result, total_length, null, false);
+// }
+
+// function void print_int_(int a) {
+//   string str = itos_(a);
+//   string_print(str);
+//   delete str;
+// } 
+
+// function void print_bool_(bool a) {
+//   if(a) {
+//     array int value = new int[4];
+//     value[0] = 116;
+//     value[1] = 114;
+//     value[2] = 117;
+//     value[3] = 101;
+
+//     string a = new String(value, 4, null, false);
+//     print(a);
+//     delete a;
+//   } else {
+//     array int value = new int[5];
+//     value[0] = 102;
+//     value[1] = 97;
+//     value[2] = 108;
+//     value[3] = 115;
+//     value[4] = 101;
+
+//     string a = new String(value, 5, null, false);
+//     print(a);
+//     delete a;
+//   }
+// } 
+
+// function void print_double_(double a) {
+//   string str = dtos_(a);
+//   string_print(str);
+//   delete str;
+// } 
+

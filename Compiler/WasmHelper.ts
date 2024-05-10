@@ -26,6 +26,8 @@ export const BUILT_INS = [
   "delete_struct",
   "sleep",
   "random",
+  "length_string",
+  "string_print"
 ];
 
 const token_to_op: { [key: number]: string | Object } = {};
@@ -96,7 +98,7 @@ export function getPrintFunction(data_type: DataType) {
   } else if (
     [TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)
   ) {
-    return "print_string";
+    return "string_print";
   }
 }
 
@@ -108,7 +110,7 @@ export function getLengthFunction(data_type: DataType) {
   } else if (
     [TokenType.STRING_TYPE, TokenType.STRING_VAL].includes(type_name)
   ) {
-    return "length_string";
+    return "main_string_length";
   }
 
   return "length";
@@ -157,6 +159,8 @@ export function getWASMSize(data_type: DataType) {
       TokenType.ID,
       TokenType.STRING_TYPE,
       TokenType.STRING_VAL,
+      TokenType.BOOL_TYPE,
+      TokenType.BOOL_VAL,
     ].includes(data_type.type_name.token_type)
   ) {
     return 4;
@@ -170,7 +174,7 @@ export function getWASMSize(data_type: DataType) {
     return 8;
   }
 
-  return 0;
+  throw new Error("Type not found");
 }
 
 export function getWASMValue(type_name: Token) {
@@ -296,83 +300,390 @@ function generate_struct_functions(size: number, wasm_type: string) {
 
 function generatePrintFunctions() {
   return `
-  (func $print_bool (param $print_bool0_value i32)
+  (func $print_bool(param $main_main_print_bool_0_a i32)
+   (local $main_main_print_bool__if10_value i32)
+   (local $main_main_print_bool__if10_a i32)
+   (local $main_main_print_bool__else10_value i32)
+   (local $main_main_print_bool__else10_a i32)
+  (local $tmp i32)
 
-    local.get $print_bool0_value
-    i32.const 0
-    i32.eq
+    local.get $main_main_print_bool_0_a
     if
-      i32.const 5
-      call $string_ini
-      i32.const 0
-      i32.const 102
-      call $string_ini_assign
-      i32.const 1
-      i32.const 97
-      call $string_ini_assign
-      i32.const 2
-      i32.const 108
-      call $string_ini_assign
-      i32.const 3
-      i32.const 115
-      call $string_ini_assign
       i32.const 4
-      i32.const 101
-      call $string_ini_assign
-      call $print_string
-    else
-      i32.const 4
-      call $string_ini
-      i32.const 0
+      call $i32_new_array
+      local.set $main_main_print_bool__if10_value
       i32.const 116
-      call $string_ini_assign
-      i32.const 1
+      i32.const 0
+      local.get $main_main_print_bool__if10_value
+      call $i32_set_array_elem
       i32.const 114
-      call $string_ini_assign
-      i32.const 2
+      i32.const 1
+      local.get $main_main_print_bool__if10_value
+      call $i32_set_array_elem
       i32.const 117
-      call $string_ini_assign
-      i32.const 3
+      i32.const 2
+      local.get $main_main_print_bool__if10_value
+      call $i32_set_array_elem
       i32.const 101
-      call $string_ini_assign
-      call $print_string
+      i32.const 3
+      local.get $main_main_print_bool__if10_value
+      call $i32_set_array_elem
+      i32.const 16
+      call $allocate_struct
+      local.set $tmp
+      local.get $main_main_print_bool__if10_value
+      local.get $tmp
+      i32.const 0
+      call $i32_assign_to_struct
+      i32.const 4
+      local.get $tmp
+      i32.const 4
+      call $i32_assign_to_struct
+      i32.const 0
+      local.get $tmp
+      i32.const 8
+      call $i32_assign_to_struct
+      i32.const 0
+      local.get $tmp
+      i32.const 12
+      call $i32_assign_to_struct
+      local.get $tmp
+      local.set $main_main_print_bool__if10_a
+      local.get $main_main_print_bool__if10_a
+      call $main_string_copy
+      call $string_print
+      local.get $main_main_print_bool__if10_a
+      call $main_string_delete
+    else
+      i32.const 5
+      call $i32_new_array
+      local.set $main_main_print_bool__else10_value
+      i32.const 102
+      i32.const 0
+      local.get $main_main_print_bool__else10_value
+      call $i32_set_array_elem
+      i32.const 97
+      i32.const 1
+      local.get $main_main_print_bool__else10_value
+      call $i32_set_array_elem
+      i32.const 108
+      i32.const 2
+      local.get $main_main_print_bool__else10_value
+      call $i32_set_array_elem
+      i32.const 115
+      i32.const 3
+      local.get $main_main_print_bool__else10_value
+      call $i32_set_array_elem
+      i32.const 101
+      i32.const 4
+      local.get $main_main_print_bool__else10_value
+      call $i32_set_array_elem
+      i32.const 16
+      call $allocate_struct
+      local.set $tmp
+      local.get $main_main_print_bool__else10_value
+      local.get $tmp
+      i32.const 0
+      call $i32_assign_to_struct
+      i32.const 5
+      local.get $tmp
+      i32.const 4
+      call $i32_assign_to_struct
+      i32.const 0
+      local.get $tmp
+      i32.const 8
+      call $i32_assign_to_struct
+      i32.const 0
+      local.get $tmp
+      i32.const 12
+      call $i32_assign_to_struct
+      local.get $tmp
+      local.set $main_main_print_bool__else10_a
+      local.get $main_main_print_bool__else10_a
+      call $main_string_copy
+      call $string_print
+      local.get $main_main_print_bool__else10_a
+      call $main_string_delete
     end
     i32.const 0
     return
   )
 
-  (func $print_int (param $print_int0_value i32)
-    (local $tmpString i32)
-    local.get $print_int0_value
-    
-    call $itos
-    local.tee $tmpString
-    
-    call $print
-    
-    local.get $tmpString
-    call $delete_string
-  )
+  (func $string_print (param $main_main_string_print0_str i32) (result i32)
+  (local $main_main_string_print0_current i32)
 
-  (func $print_double (param $print_double0_value f64)
-    (local $tmpString i32)
-    local.get $print_double0_value
-    
-    call $dtos
-    local.tee $tmpString
-    
-    call $print
-    
-    local.get $tmpString
-    call $delete_string
-  )
+   local.get $main_main_string_print0_str
+   local.set $main_main_string_print0_current
+
+   (loop $loop1
+     local.get $main_main_string_print0_current
+     i32.const 0
+     i32.eq
+     i32.const -1
+     i32.mul
+     i32.const 1
+     i32.add
+     if
+       local.get $main_main_string_print0_current
+       call $check_if_null
+       i32.const 0
+       i32.add
+       i32.load
+       call $print
+       local.get $main_main_string_print0_current
+       call $check_if_null
+       i32.const 8
+       i32.add
+       i32.load
+       local.set $main_main_string_print0_current
+       br $loop1
+     end
+   )
+
+   local.get $main_main_string_print0_str
+   call $main_string_delete
+   i32.const 0
+   return
+ )
 
   (func $print_string (param $print_string0_value i32)
     local.get $print_string0_value
     call $print
-    local.get $print_string0_value
-    call $delete_string
+    ;; local.get $print_string0_value
+    ;; call $delete_string
   )`;
+}
+
+function get_string_functions() {
+  return "";
+//   return `  (func $main_string_ini (param $main_main_string_ini0_str i32) (result i32)
+//   (local $tmp i32)
+
+//    i32.const 16
+//    call $allocate_struct
+//    local.set $tmp
+//    local.get $main_main_string_ini0_str
+//    call $string_to_array_int
+//    local.get $tmp
+//    i32.const 0
+//    call $i32_assign_to_struct
+//    local.get $main_main_string_ini0_str
+//    call $length_string
+//    local.get $tmp
+//    i32.const 4
+//    call $i32_assign_to_struct
+//    i32.const 0
+//    local.get $tmp
+//    i32.const 8
+//    call $i32_assign_to_struct
+//    i32.const 1
+//    local.get $tmp
+//    i32.const 12
+//    call $i32_assign_to_struct
+//    local.get $tmp
+//    return
+//    i32.const 0
+//    return
+//  )
+
+//  (func $main_string_append (param $main_main_string_append0_string_1 i32) (param $main_main_string_append0_string_2 i32)
+//   (local $main_main_string_append0_current i32)
+//   (local $main_main_string_append0_last_string i32)
+//   (local $tmp i32)
+
+//    local.get $main_main_string_append0_string_2
+//    call $main_string_copy
+//    local.set $main_main_string_append0_string_2
+
+//    local.get $main_main_string_append0_string_1
+//    local.set $main_main_string_append0_current
+
+//    i32.const 0
+//    local.set $main_main_string_append0_last_string
+
+//    (loop $loop1
+//      local.get $main_main_string_append0_current
+//      i32.const 0
+//      i32.eq
+//      i32.const -1
+//      i32.mul
+//      i32.const 1
+//      i32.add
+//      if
+//        local.get $main_main_string_append0_current
+//        local.set $main_main_string_append0_last_string
+//        local.get $main_main_string_append0_current
+//        call $check_if_null
+//        i32.const 8
+//        i32.add
+//        i32.load
+//        local.set $main_main_string_append0_current
+//        br $loop1
+//      end
+//    )
+
+//    local.get $main_main_string_append0_string_2
+//    local.get $main_main_string_append0_last_string
+//    call $check_if_null
+//    i32.const 8
+//    call $i32_assign_to_struct
+//    i32.const 0
+//    return
+//  )
+
+//  (func $main_string_copy (param $main_main_string_copy0_str i32) (result i32)
+//   (local $main_main_string_copy0_val i32)
+//   (local $main_main_string_copy0_a i32)
+//   (local $tmp i32)
+
+//    local.get $main_main_string_copy0_str
+//    i32.const 0
+//    i32.eq
+//    if
+//      i32.const 0
+//      return
+//    end
+
+//    local.get $main_main_string_copy0_str
+//    call $check_if_null
+//    i32.const 0
+//    i32.add
+//    i32.load
+//    local.set $main_main_string_copy0_val
+
+//    i32.const 16
+//    call $allocate_struct
+//    local.set $tmp
+//    local.get $main_main_string_copy0_val
+//    local.get $tmp
+//    i32.const 0
+//    call $i32_assign_to_struct
+//    local.get $main_main_string_copy0_str
+//    call $check_if_null
+//    i32.const 4
+//    i32.add
+//    i32.load
+//    local.get $tmp
+//    i32.const 4
+//    call $i32_assign_to_struct
+//    local.get $main_main_string_copy0_str
+//    call $check_if_null
+//    i32.const 8
+//    i32.add
+//    i32.load
+//    call $main_string_copy
+//    local.get $tmp
+//    i32.const 8
+//    call $i32_assign_to_struct
+//    local.get $main_main_string_copy0_str
+//    call $check_if_null
+//    i32.const 12
+//    i32.add
+//    i32.load
+//    local.get $tmp
+//    i32.const 12
+//    call $i32_assign_to_struct
+//    local.get $tmp
+//    local.set $main_main_string_copy0_a
+
+//    local.get $main_main_string_copy0_a
+//    return
+//    i32.const 0
+//    return
+//  )
+
+//  (func $main_string_length (param $main_main_string_length0_str i32) (result i32)
+//   (local $main_main_string_length0_current i32)
+//   (local $main_main_string_length0_str_length i32)
+//   (local $tmp i32)
+
+//    local.get $main_main_string_length0_str
+//    local.set $main_main_string_length0_current
+
+//    i32.const 0
+//    local.set $main_main_string_length0_str_length
+
+//    (loop $loop1
+//      local.get $main_main_string_length0_current
+//      i32.const 0
+//      i32.eq
+//      i32.const -1
+//      i32.mul
+//      i32.const 1
+//      i32.add
+//      if
+//        local.get $main_main_string_length0_str_length
+//        local.get $main_main_string_length0_str
+//        call $check_if_null
+//        i32.const 4
+//        i32.add
+//        i32.load
+//        i32.add
+//        local.set $main_main_string_length0_str_length
+//        local.get $main_main_string_length0_current
+//        call $check_if_null
+//        i32.const 8
+//        i32.add
+//        i32.load
+//        local.set $main_main_string_length0_current
+//        br $loop1
+//      end
+//    )
+
+//    local.get $main_main_string_length0_str_length
+//    return
+//    i32.const 0
+//    return
+//  )
+
+//  (func $main_string_delete (param $main_main_string_delete0_str i32) (result i32)
+//   (local $main_main_string_delete0_current i32)
+//   (local $main_main_string_delete_while10_tmp i32)
+//   (local $tmp i32)
+
+//    local.get $main_main_string_delete0_str
+//    local.set $main_main_string_delete0_current
+
+//    (loop $loop1
+//      local.get $main_main_string_delete0_current
+//      i32.const 0
+//      i32.eq
+//      i32.const -1
+//      i32.mul
+//      i32.const 1
+//      i32.add
+//      if
+//        local.get $main_main_string_delete0_current
+//        call $check_if_null
+//        i32.const 8
+//        i32.add
+//        i32.load
+//        local.set $main_main_string_delete_while10_tmp
+//        local.get $main_main_string_delete0_current
+//        call $check_if_null
+//        i32.const 12
+//        i32.add
+//        i32.load
+//        i32.const 0
+//        i32.eq
+//        if
+//          local.get $main_main_string_delete0_current
+//          call $check_if_null
+//          i32.const 0
+//          i32.add
+//          i32.load
+//          call $delete_i32_array
+//        end
+//        local.get $main_main_string_delete0_current
+//        call $delete_struct
+//        local.get $main_main_string_delete_while10_tmp
+//        local.set $main_main_string_delete0_current
+//        br $loop1
+//      end
+//    )
+//    i32.const 0
+//    return
+//  )`;
 }
 
 export function getWASMCoreFunctions(unsafe = false) {
@@ -445,18 +756,12 @@ export function getWASMCoreFunctions(unsafe = false) {
     i32.sub
     i32.load
   )
-  
+
   (func $length_string (param $arr i32) (result i32)
-    (local $tmpLength i32)
-    
     local.get $arr
-    call $length
-    local.set $tmpLength
-    
-    local.get $arr
-    call $delete_string
-    
-    local.get $tmpLength
+    i32.const 4
+    i32.sub
+    i32.load
   )
   
   (func $error (param $str_array i32)
@@ -492,8 +797,8 @@ export function getWASMCoreFunctions(unsafe = false) {
   )
 
   (func $delete_string (param $delete_string0_str i32)
-    local.get $delete_string0_str
-    call $delete_i32_array
+    ;; local.get $delete_string0_str
+    ;; call $delete_i32_array
   )
   
   (func $string_ini_assign (param $array i32) (param $index i32) (param $value i32) (result i32)    
@@ -638,233 +943,6 @@ export function getWASMCoreFunctions(unsafe = false) {
     return
   )
   
-  (func $itos (param $itos_0_val i32) (result i32)
-   (local $size i32)
-   (local $val i32)
-   (local $result i32)
-   (local $i i32)
-
-    i32.const 0
-    local.set $size
-
-    local.get $itos_0_val
-    local.set $val
-
-    (loop $loop1
-      local.get $val
-      i32.const 10
-      i32.div_s
-      local.set $val
-      local.get $size
-      i32.const 1
-      i32.add
-      local.set $size
-      local.get $val
-      i32.const 0
-      i32.gt_s
-      br_if $loop1
-    )
-
-    local.get $itos_0_val
-    local.set $val
-
-    local.get $size
-    call $i32_new_array
-    local.set $result
-
-    local.get $size
-    i32.const 1
-    i32.sub
-    local.set $i
-    (loop $loop2
-      i32.const 48
-      local.get $val
-      i32.const 10
-      i32.rem_s
-      i32.add
-      local.get $i
-      local.get $result
-      call $i32_set_array_elem
-      local.get $val
-      i32.const 10
-      i32.div_s
-      local.set $val
-      local.get $i
-      i32.const 1
-      i32.sub
-      local.set $i
-      local.get $i
-      i32.const 0
-      i32.ge_s
-      br_if $loop2
-    )
-
-    local.get $result
-    return
-  )
-  
-  
-  (func $dtos (param $dtos_0_d f64) (result i32)
-   (local $dtos_0_precision i32)
-   (local $dtos_0_total_length i32)
-   (local $dtos_0_is_neg i32)
-   (local $dtos_0_int_part i32)
-   (local $dtos_0_int_length i32)
-   (local $dtos_0_offset i32)
-   (local $dtos_0_fract_part f64)
-   (local $dtos_0_result i32)
-   (local $dtos__for1_i i32)
-   (local $dtos__for2_i i32)
-   (local $dtos__for2_digit i32)
-   (local $tmpString i32)
-
-    i32.const 10
-    local.set $dtos_0_precision
-
-    local.get $dtos_0_precision
-    i32.const 1
-    i32.add
-    local.set $dtos_0_total_length
-
-    local.get $dtos_0_d
-    f64.const 0.0
-    f64.lt
-    local.set $dtos_0_is_neg
-
-    local.get $dtos_0_is_neg
-    if
-      local.get $dtos_0_total_length
-      i32.const 1
-      i32.add
-      local.set $dtos_0_total_length
-      local.get $dtos_0_d
-      f64.const 0.0
-      f64.const 1.0
-      f64.sub
-      f64.mul
-      local.set $dtos_0_d
-    end
-
-    local.get $dtos_0_d
-    call $dtoi
-    call $itos
-    local.tee $tmpString
-    call $string_to_array_int
-    local.set $dtos_0_int_part
-
-    local.get $dtos_0_int_part
-    call $length
-    local.set $dtos_0_int_length
-
-    i32.const 0
-    local.set $dtos_0_offset
-
-    local.get $dtos_0_total_length
-    local.get $dtos_0_int_length
-    i32.add
-    local.set $dtos_0_total_length
-
-    local.get $dtos_0_d
-    local.get $dtos_0_d
-    call $dtoi
-    call $itod
-    f64.sub
-    local.set $dtos_0_fract_part
-
-    local.get $dtos_0_total_length
-    call $i32_new_array
-    local.set $dtos_0_result
-
-    local.get $dtos_0_is_neg
-    if
-      i32.const 45
-      local.get $dtos_0_offset
-      local.get $dtos_0_result
-      call $i32_set_array_elem
-      local.get $dtos_0_offset
-      i32.const 1
-      i32.add
-      local.set $dtos_0_offset
-    end
-
-    i32.const 0
-    local.set $dtos__for1_i
-    (loop $loop1
-      local.get $dtos__for1_i
-      local.get $dtos_0_int_part
-      call $i32_get_array_elem
-      local.get $dtos_0_offset
-      local.get $dtos_0_result
-      call $i32_set_array_elem
-      local.get $dtos_0_offset
-      i32.const 1
-      i32.add
-      local.set $dtos_0_offset
-      local.get $dtos__for1_i
-      i32.const 1
-      i32.add
-      local.set $dtos__for1_i
-      local.get $dtos__for1_i
-      local.get $dtos_0_int_length
-      i32.lt_s
-      br_if $loop1
-    )
-
-    i32.const 46
-    local.get $dtos_0_offset
-    local.get $dtos_0_result
-    call $i32_set_array_elem
-
-    local.get $dtos_0_offset
-    i32.const 1
-    i32.add
-    local.set $dtos_0_offset
-
-    i32.const 0
-    local.set $dtos__for2_i
-    (loop $loop2
-      local.get $dtos_0_fract_part
-      f64.const 10.0
-      f64.mul
-      local.set $dtos_0_fract_part
-      local.get $dtos_0_fract_part
-      call $dtoi
-      local.set $dtos__for2_digit
-      i32.const 48
-      local.get $dtos__for2_digit
-      i32.add
-      local.get $dtos_0_offset
-      local.get $dtos_0_result
-      call $i32_set_array_elem
-      local.get $dtos_0_fract_part
-      local.get $dtos__for2_digit
-      call $itod
-      f64.sub
-      local.set $dtos_0_fract_part
-      local.get $dtos_0_offset
-      i32.const 1
-      i32.add
-      local.set $dtos_0_offset
-      local.get $dtos__for2_i
-      i32.const 1
-      i32.add
-      local.set $dtos__for2_i
-      local.get $dtos__for2_i
-      local.get $dtos_0_precision
-      i32.lt_s
-      br_if $loop2
-    )
-
-    local.get $tmpString
-    call $delete_string
-
-    local.get $dtos_0_result
-    call $array_int_to_string
-    return
-    i32.const 0
-    return
-  )
-  
   (func $stod (param $stod_0_str i32) (result f64)
    (local $stod_0_int_arr i32)
    (local $stod_0_is_neg i32)
@@ -1002,12 +1080,428 @@ export function getWASMCoreFunctions(unsafe = false) {
     return
   )
   
-  (func $stoi (param $stoi_0_str i32) (result i32)
-    local.get $stoi_0_str
-    call $stod
-    call $dtoi
+
+  (func $stoi (param $main_main_stoi_0_s i32) (result i32)
+   (local $main_main_stoi_0_current i32)
+   (local $main_main_stoi_0_val i32)
+   (local $main_main_stoi__while10_int_string i32)
+   (local $main_main_stoi__while10_length i32)
+   (local $main_main_stoi__while1_for10_i i32)
+   (local $tmp i32)
+
+    local.get $main_main_stoi_0_s
+    local.set $main_main_stoi_0_current
+
+    i32.const 0
+    local.set $main_main_stoi_0_val
+
+    (loop $loop1
+      local.get $main_main_stoi_0_current
+      i32.const 0
+      i32.ne
+      if
+        local.get $main_main_stoi_0_current
+        call $check_if_null
+        i32.const 0
+        i32.add
+        i32.load
+        call $string_to_array_int
+        local.set $main_main_stoi__while10_int_string
+        local.get $main_main_stoi__while10_int_string
+        call $length
+        local.set $main_main_stoi__while10_length
+        i32.const 0
+        local.set $main_main_stoi__while1_for10_i
+        (loop $loop2
+          local.get $main_main_stoi_0_val
+          i32.const 10
+          i32.mul
+          local.get $main_main_stoi__while1_for10_i
+          local.get $main_main_stoi__while10_int_string
+          call $i32_get_array_elem
+          i32.const 48
+          i32.sub
+          i32.add
+          local.set $main_main_stoi_0_val
+          local.get $main_main_stoi__while1_for10_i
+          i32.const 1
+          i32.add
+          local.set $main_main_stoi__while1_for10_i
+          local.get $main_main_stoi__while1_for10_i
+          local.get $main_main_stoi__while10_length
+          i32.lt_s
+          br_if $loop2
+        )
+        local.get $main_main_stoi_0_current
+        call $check_if_null
+        i32.const 8
+        i32.add
+        i32.load
+        local.set $main_main_stoi_0_current
+        br $loop1
+      end
+    )
+
+    local.get $main_main_stoi_0_s
+    call $delete_struct
+
+    local.get $main_main_stoi_0_val
+    return
+    i32.const 0
     return
   )
+
+  (func $itos (param $main_main_itos_0_a i32) (result i32)
+   (local $main_main_itos_0_is_neg i32)
+   (local $main_main_itos_0_size i32)
+   (local $main_main_itos_0_val i32)
+   (local $main_main_itos_0_result i32)
+   (local $main_main_itos_0_index i32)
+   (local $tmp i32)
+
+    local.get $main_main_itos_0_a
+    i32.const 0
+    i32.lt_s
+    local.set $main_main_itos_0_is_neg
+
+    i32.const 0
+    local.set $main_main_itos_0_size
+
+    local.get $main_main_itos_0_a
+    i32.const 0
+    i32.lt_s
+    if
+      local.get $main_main_itos_0_a
+      i32.const 0
+      i32.const 1
+      i32.sub
+      i32.mul
+      local.set $main_main_itos_0_a
+    end
+
+    local.get $main_main_itos_0_a
+    local.set $main_main_itos_0_val
+
+    (loop $loop1
+      local.get $main_main_itos_0_val
+      i32.const 0
+      i32.gt_s
+      if
+        local.get $main_main_itos_0_size
+        i32.const 1
+        i32.add
+        local.set $main_main_itos_0_size
+        local.get $main_main_itos_0_val
+        i32.const 10
+        i32.div_s
+        local.set $main_main_itos_0_val
+        br $loop1
+      end
+    )
+
+    local.get $main_main_itos_0_is_neg
+    if
+      local.get $main_main_itos_0_size
+      i32.const 1
+      i32.add
+      local.set $main_main_itos_0_size
+    end
+
+    local.get $main_main_itos_0_size
+    call $i32_new_array
+    local.set $main_main_itos_0_result
+
+    local.get $main_main_itos_0_is_neg
+    if
+      i32.const 45
+      i32.const 0
+      local.get $main_main_itos_0_result
+      call $i32_set_array_elem
+    end
+
+    local.get $main_main_itos_0_a
+    local.set $main_main_itos_0_val
+
+    i32.const 0
+    local.set $main_main_itos_0_index
+
+    (loop $loop2
+      local.get $main_main_itos_0_val
+      i32.const 0
+      i32.gt_s
+      if
+        i32.const 48
+        local.get $main_main_itos_0_val
+        i32.const 10
+        i32.rem_s
+        i32.add
+        local.get $main_main_itos_0_size
+        local.get $main_main_itos_0_index
+        i32.const 1
+        i32.add
+        i32.sub
+        local.get $main_main_itos_0_result
+        call $i32_set_array_elem
+        local.get $main_main_itos_0_index
+        i32.const 1
+        i32.add
+        local.set $main_main_itos_0_index
+        local.get $main_main_itos_0_val
+        i32.const 10
+        i32.div_s
+        local.set $main_main_itos_0_val
+        br $loop2
+      end
+    )
+
+    i32.const 16
+    call $allocate_struct
+    local.set $tmp
+    local.get $main_main_itos_0_result
+    local.get $tmp
+    i32.const 0
+    call $i32_assign_to_struct
+    local.get $main_main_itos_0_size
+    local.get $tmp
+    i32.const 4
+    call $i32_assign_to_struct
+    i32.const 0
+    local.get $tmp
+    i32.const 8
+    call $i32_assign_to_struct
+    i32.const 0
+    local.get $tmp
+    i32.const 12
+    call $i32_assign_to_struct
+    local.get $tmp
+    return
+    i32.const 0
+    return
+  )
+
+ (func $dtos (param $main_main_dtos_0_d f64) (result i32)
+  (local $main_main_dtos_0_precision i32)
+  (local $main_main_dtos_0_total_length i32)
+  (local $main_main_dtos_0_is_neg i32)
+  (local $main_main_dtos_0_int_part_string i32)
+  (local $main_main_dtos_0_int_part i32)
+  (local $main_main_dtos_0_int_length i32)
+  (local $main_main_dtos_0_offset i32)
+  (local $main_main_dtos_0_fract_part f64)
+  (local $main_main_dtos_0_result i32)
+  (local $main_main_dtos__for10_i i32)
+  (local $main_main_dtos__for20_i i32)
+  (local $main_main_dtos__for20_digit i32)
+  (local $tmp i32)
+
+   i32.const 10
+   local.set $main_main_dtos_0_precision
+
+   local.get $main_main_dtos_0_precision
+   i32.const 1
+   i32.add
+   local.set $main_main_dtos_0_total_length
+
+   local.get $main_main_dtos_0_d
+   f64.const 0.0
+   f64.lt
+   local.set $main_main_dtos_0_is_neg
+
+   local.get $main_main_dtos_0_is_neg
+   if
+     local.get $main_main_dtos_0_total_length
+     i32.const 1
+     i32.add
+     local.set $main_main_dtos_0_total_length
+     local.get $main_main_dtos_0_d
+     f64.const 0.0
+     f64.const 1.0
+     f64.sub
+     f64.mul
+     local.set $main_main_dtos_0_d
+   end
+
+   local.get $main_main_dtos_0_d
+   call $dtoi
+   call $itos
+   local.set $main_main_dtos_0_int_part_string
+
+   local.get $main_main_dtos_0_int_part_string
+   call $check_if_null
+   i32.const 0
+   i32.add
+   i32.load
+   local.set $main_main_dtos_0_int_part
+
+   local.get $main_main_dtos_0_int_part
+   call $length
+   local.set $main_main_dtos_0_int_length
+
+   i32.const 0
+   local.set $main_main_dtos_0_offset
+
+   local.get $main_main_dtos_0_total_length
+   local.get $main_main_dtos_0_int_length
+   i32.add
+   local.set $main_main_dtos_0_total_length
+
+   local.get $main_main_dtos_0_d
+   local.get $main_main_dtos_0_d
+   call $dtoi
+   call $itod
+   f64.sub
+   local.set $main_main_dtos_0_fract_part
+
+   local.get $main_main_dtos_0_total_length
+   call $i32_new_array
+   local.set $main_main_dtos_0_result
+
+   local.get $main_main_dtos_0_is_neg
+   if
+     i32.const 45
+     local.get $main_main_dtos_0_offset
+     local.get $main_main_dtos_0_result
+     call $i32_set_array_elem
+     local.get $main_main_dtos_0_offset
+     i32.const 1
+     i32.add
+     local.set $main_main_dtos_0_offset
+   end
+
+   i32.const 0
+   local.set $main_main_dtos__for10_i
+   (loop $loop1
+     local.get $main_main_dtos__for10_i
+     local.get $main_main_dtos_0_int_part
+     call $i32_get_array_elem
+     local.get $main_main_dtos_0_offset
+     local.get $main_main_dtos_0_result
+     call $i32_set_array_elem
+     local.get $main_main_dtos_0_offset
+     i32.const 1
+     i32.add
+     local.set $main_main_dtos_0_offset
+     local.get $main_main_dtos__for10_i
+     i32.const 1
+     i32.add
+     local.set $main_main_dtos__for10_i
+     local.get $main_main_dtos__for10_i
+     local.get $main_main_dtos_0_int_length
+     i32.lt_s
+     br_if $loop1
+   )
+
+   i32.const 46
+   local.get $main_main_dtos_0_offset
+   local.get $main_main_dtos_0_result
+   call $i32_set_array_elem
+
+   local.get $main_main_dtos_0_offset
+   i32.const 1
+   i32.add
+   local.set $main_main_dtos_0_offset
+
+   i32.const 0
+   local.set $main_main_dtos__for20_i
+   (loop $loop2
+     local.get $main_main_dtos_0_fract_part
+     f64.const 10.0
+     f64.mul
+     local.set $main_main_dtos_0_fract_part
+     local.get $main_main_dtos_0_fract_part
+     call $dtoi
+     local.set $main_main_dtos__for20_digit
+     i32.const 48
+     local.get $main_main_dtos__for20_digit
+     i32.add
+     local.get $main_main_dtos_0_offset
+     local.get $main_main_dtos_0_result
+     call $i32_set_array_elem
+     local.get $main_main_dtos_0_fract_part
+     local.get $main_main_dtos__for20_digit
+     call $itod
+     f64.sub
+     local.set $main_main_dtos_0_fract_part
+     local.get $main_main_dtos_0_offset
+     i32.const 1
+     i32.add
+     local.set $main_main_dtos_0_offset
+     local.get $main_main_dtos__for20_i
+     i32.const 1
+     i32.add
+     local.set $main_main_dtos__for20_i
+     local.get $main_main_dtos__for20_i
+     local.get $main_main_dtos_0_precision
+     i32.lt_s
+     br_if $loop2
+   )
+
+   local.get $main_main_dtos_0_int_part_string
+   call $delete_struct
+
+   local.get $main_main_dtos_0_int_part
+   call $delete_i32_array
+
+   i32.const 16
+   call $allocate_struct
+   local.set $tmp
+   local.get $main_main_dtos_0_result
+   local.get $tmp
+   i32.const 0
+   call $i32_assign_to_struct
+   local.get $main_main_dtos_0_total_length
+   local.get $tmp
+   i32.const 4
+   call $i32_assign_to_struct
+   i32.const 0
+   local.get $tmp
+   i32.const 8
+   call $i32_assign_to_struct
+   i32.const 0
+   local.get $tmp
+   i32.const 12
+   call $i32_assign_to_struct
+   local.get $tmp
+   return
+   i32.const 0
+   return
+ )
+
+ (func $print_int (param $main_main_print_int_0_a i32)
+  (local $main_main_print_int_0_str i32)
+  (local $tmp i32)
+
+   local.get $main_main_print_int_0_a
+   call $itos
+   local.set $main_main_print_int_0_str
+
+   local.get $main_main_print_int_0_str
+   call $main_string_copy
+   call $string_print
+
+   local.get $main_main_print_int_0_str
+   call $main_string_delete
+   i32.const 0
+   return
+ )
+
+ (func $print_double (param $main_main_print_double_0_a f64)
+  (local $main_main_print_double_0_str i32)
+  (local $tmp i32)
+
+   local.get $main_main_print_double_0_a
+   call $dtos
+   local.set $main_main_print_double_0_str
+
+   local.get $main_main_print_double_0_str
+   call $main_string_copy
+   call $string_print
+
+   local.get $main_main_print_double_0_str
+   call $main_string_delete
+   i32.const 0
+   return
+ )
 
   (func $get (param $get_0_index i32) (param $get_0_str i32) (result i32)
    (local $get_0_arr_int i32)
@@ -1076,6 +1570,7 @@ export function getWASMCoreFunctions(unsafe = false) {
   )
   ${generate_struct_functions(4, "i32")}
   ${generate_struct_functions(8, "f64")}
+  ${get_string_functions()}
 `;
 }
 

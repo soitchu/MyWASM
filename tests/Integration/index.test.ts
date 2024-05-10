@@ -13,6 +13,7 @@ async function runMyWASMFile(entryFile: string) {
       S: 0,
       returnBuffer: true,
       unsafeArray: false,
+      wat: false
     }
   )) as Uint8Array;
 

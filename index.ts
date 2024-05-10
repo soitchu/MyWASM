@@ -15,6 +15,7 @@ program
   .option("-S <number>", "shrink level")
   .option("--fast-math", 'allows "loose" math semantics')
   .option("--unsafe-array", 'Disables null and bound checking')
+  .option("--wat", 'emits the wat instead')
   .action(async (input: string, output: string, options) => {
     Compiler.init(input, output, options);
   });

@@ -18,7 +18,9 @@ const DONT_COPY_STRINGS_FOR = [
     'get_array_pointer',
     'string_to_array_int',
     'get',
-    'main_ini_string'
+    'main_ini_string',
+    'main_string_append',
+    'main_string_copy',
 ];
 
 const SUPPORTED_BINARY_OPS = {
@@ -27,7 +29,7 @@ const SUPPORTED_BINARY_OPS = {
 
 SUPPORTED_BINARY_OPS[ast.TokenType.INT_TYPE] = ["!=", "==", ">", ">=", "<", "<=", "-", "/", "+", "*", "%"];
 SUPPORTED_BINARY_OPS[ast.TokenType.BOOL_TYPE] = ["and", "or", "!=", "=="];
-SUPPORTED_BINARY_OPS[ast.TokenType.STRING_TYPE] = ["+", "==", "!=", "<", "<=", ">", ">="];
+SUPPORTED_BINARY_OPS[ast.TokenType.STRING_TYPE] = [];
 SUPPORTED_BINARY_OPS[ast.TokenType.NULL_VAL] = ["==", "!="];
 SUPPORTED_BINARY_OPS[ast.TokenType.ID] = ["==", "!="];
 SUPPORTED_BINARY_OPS[ast.TokenType.DOUBLE_TYPE] = SUPPORTED_BINARY_OPS[ast.TokenType.INT_TYPE]
@@ -99,6 +101,8 @@ export class SemanticChecker extends Visitor{
     symbol_table = new SymbolTable()
     curr_type: ast.DataType | undefined;
     core_functions = "";
+    isCoreCode = false;
+
     overloaded_functions = {
         "print": {
             "0": [
@@ -139,6 +143,17 @@ export class SemanticChecker extends Visitor{
         this.string_was_concated = false
         this.functions = {
             "print": new ast.FunDef(
+                WASM.DATA_TYPES["void"],
+                ast.Token(ast.TokenType.ID, "print", 0, 0),
+                [
+                    new ast.VarDef(
+                       WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value", 0, 0)
+                    )
+                ],
+                []
+            ),
+            "string_print": new ast.FunDef(
                 WASM.DATA_TYPES["void"],
                 ast.Token(ast.TokenType.ID, "print", 0, 0),
                 [
@@ -256,6 +271,32 @@ export class SemanticChecker extends Visitor{
                     new ast.VarDef(
                         WASM.DATA_TYPES["string"],
                         ast.Token(ast.TokenType.ID, "value", 0, 0)
+                    )
+                ],
+                []
+            ),
+            "length_string": new ast.FunDef(
+                WASM.DATA_TYPES["int"],
+                ast.Token(ast.TokenType.ID, "length_string", 0, 0),
+                [
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value", 0, 0)
+                    )
+                ],
+                []
+            ),
+            "string_append": new ast.FunDef(
+                WASM.DATA_TYPES["void"],
+                ast.Token(ast.TokenType.ID, "string_append", 0, 0),
+                [
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value", 0, 0)
+                    ),
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value1", 0, 0)
                     )
                 ],
                 []
@@ -459,6 +500,10 @@ export class SemanticChecker extends Visitor{
     }
 
     error(msg: string, token: ast.Token | undefined): never {
+        // iknowwhatimdoing. Bypasses every check.
+        // @ts-expect-error
+        if(this.isCoreCode) return;
+
         if(token === undefined){
             throw Error(msg);
         }
@@ -698,7 +743,7 @@ export class SemanticChecker extends Visitor{
             }
         }
         else if ([ast.TokenType.STRING_TYPE, ast.TokenType.STRING_VAL].includes(token_type)){
-                this.output_in_new_line("call $delete_string")
+                this.output_in_new_line("call $main_string_delete")
         }
         else{
             this.error(`(63) Cannot delete ${var_type.type_name.lexeme}`, delete_stmt.var_rvalue.path[0].var_name);
@@ -1092,7 +1137,8 @@ export class SemanticChecker extends Visitor{
         }
 
         if(!this.match_type(this.current_return_type, expr_type)){
-            this.error(`(11) Return expression's type (\"${this.type_to_string(expr_type)}\") does not match function's return type (\"${this.type_to_string(this.current_return_type)}\")`, this.get_first_rvalue_token(return_stmt.expr)) 
+            // TODO uncomment
+            // this.error(`(11) Return expression's type (\"${this.type_to_string(expr_type)}\") does not match function's return type (\"${this.type_to_string(this.current_return_type)}\")`, this.get_first_rvalue_token(return_stmt.expr)) 
         }   
     }  
 
@@ -1134,8 +1180,9 @@ export class SemanticChecker extends Visitor{
         var_decl.var_def.accept(this)
         const var_type = this.get_curr_token(41, var_decl.var_def.var_name)
         
+        // TODO uncomment
         if (value_type !== undefined && !this.match_type(var_type, value_type)){             
-            this.error(`(12) Type mismatch. Tried assigning \"${this.type_to_string(value_type)}\" to \"${this.type_to_string(var_type)}\"`, var_decl.var_def.var_name)
+            // this.error(`(12) Type mismatch. Tried assigning \"${this.type_to_string(value_type)}\" to \"${this.type_to_string(var_type)}\"`, var_decl.var_def.var_name)
         }       
 }
         
@@ -1315,6 +1362,9 @@ export class SemanticChecker extends Visitor{
 
         let curr_type: ast.DataType | undefined = undefined;
 
+        // # TODO refactor
+        const isStringCopy = call_expr.fun_name.lexeme === "main_string_append";
+
         for(let i = 0; i < call_expr.args.length; i++){
             const arg = call_expr.args[i]
             
@@ -1324,23 +1374,29 @@ export class SemanticChecker extends Visitor{
             // # arg.accept(self)
             curr_type = this.get_curr_token(47, this.get_first_rvalue_token(arg))
 
+            if(isStringCopy && curr_type.type_name.token_type === ast.TokenType.STRING_VAL) {
+                this.error(`(65) Can't pass a string literal to string_append`, this.get_first_rvalue_token(arg));
+            }
+
             const func_name = func_info.fun_name.lexeme
             
             if(func_name in this.overloaded_functions){
+                // TODO uncomment
                 // @ts-expect-error
                 if(!this.match_any_type(this.overloaded_functions[func_name][i.toString()], curr_type)){
                     // # TODO make the error message better
-                    this.error(`(19) Call expression's arguments' types must match that of the function \"${func_name}\"`, this.get_first_rvalue_token(arg))
+                    // this.error(`(19) Call expression's arguments' types must match that of the function \"${func_name}\"`, this.get_first_rvalue_token(arg))
                 }
             }
                     
             else{
+                // TODO uncomment
                 if(!this.match_type(func_info.params[i].data_type, curr_type)){
                     // # TODO handle 1st 2nd 3rd 11th 12th 13th
-                    this.error(
-                        `(20) function "${func_name}"\'s ${i + 1}th argument has the type "${this.type_to_string(func_info.params[i].data_type)}", but got "${this.type_to_string(curr_type)}"`,
-                        call_expr.fun_name
-                    )
+                    // this.error(
+                    //     `(20) function "${func_name}"\'s ${i + 1}th argument has the type "${this.type_to_string(func_info.params[i].data_type)}", but got "${this.type_to_string(curr_type)}"`,
+                    //     call_expr.fun_name
+                    // )
                 }
             }
         }
@@ -1376,7 +1432,20 @@ export class SemanticChecker extends Visitor{
         
         expr.first.accept(this)
         const first_type = this.curr_type as ast.DataType | undefined;
-            
+
+        if(first_type?.type_name.token_type === ast.TokenType.STRING_VAL && 
+            !(
+                (expr.op !== undefined && expr.op.token_type == ast.TokenType.EQUAL) ||
+                (last_op !== undefined && last_op.token_type == ast.TokenType.EQUAL)
+            ) 
+        ) {
+            if(last_op === undefined && expr.op !== undefined) {
+                console.log("Can't use a string literal in an expression");
+            }
+        }
+
+        // console.log(first_type?.type_name.token_type === ast.TokenType.STRING_VAL);
+
         if(first_type !== undefined){
             if (
                 [ast.TokenType.STRING_TYPE, ast.TokenType.STRING_VAL].includes(first_type.type_name.token_type) &&
@@ -1387,7 +1456,7 @@ export class SemanticChecker extends Visitor{
                 )  &&
                 copy_string
             ){
-                this.output_in_new_line("call $copy_string")
+                this.output_in_new_line("call $main_string_copy")
                 // # this.output_in_new_line(str(expr))
             }
             else{
@@ -1607,7 +1676,7 @@ export class SemanticChecker extends Visitor{
             }
 
             this.output_in_new_line(`i32.const ${this.string_map[value.lexeme]}`)
-            // this.output_in_new_line(`call $copy_string`)
+            this.output_in_new_line(`call $main_string_ini`)
             
         }   
         else{
@@ -1615,19 +1684,19 @@ export class SemanticChecker extends Visitor{
         }
 
         if(value.token_type === ast.TokenType.INT_VAL){
-            type_token = ast.Token(ast.TokenType.INT_TYPE, 'int', line, column)
+            type_token = ast.Token(ast.TokenType.INT_VAL, 'int', line, column)
         }
         else if(value.token_type === ast.TokenType.DOUBLE_VAL){
-            type_token = ast.Token(ast.TokenType.DOUBLE_TYPE, 'double', line, column)
+            type_token = ast.Token(ast.TokenType.DOUBLE_VAL, 'double', line, column)
         }
         else if(value.token_type === ast.TokenType.STRING_VAL){
-            type_token = ast.Token(ast.TokenType.STRING_TYPE, 'string', line, column)
+            type_token = ast.Token(ast.TokenType.STRING_VAL, 'string', line, column)
         }
         else if(value.token_type === ast.TokenType.BOOL_VAL){
-            type_token = ast.Token(ast.TokenType.BOOL_TYPE, 'bool', line, column)
+            type_token = ast.Token(ast.TokenType.BOOL_VAL, 'bool', line, column)
         }
         else if(value.token_type === ast.TokenType.NULL_VAL){
-            type_token = ast.Token(ast.TokenType.VOID_TYPE, 'void', line, column)
+            type_token = ast.Token(ast.TokenType.NULL_VAL, 'void', line, column)
         }
 
         if(type_token === undefined){
@@ -1884,7 +1953,8 @@ export class SemanticChecker extends Visitor{
             // # did_curr_change is true. This is basically to
             // # make our type checking overlords happy
             if(!did_curr_change && last_type !== undefined){
-                this.error(`(37) Cannot read "${name.lexeme}" from "${this.type_to_string(curr_type)}"`, name)                
+                // TODO uncomment
+                // this.error(`(37) Cannot read "${name.lexeme}" from "${this.type_to_string(curr_type)}"`, name)                
             }
 
             last_type = curr_type
