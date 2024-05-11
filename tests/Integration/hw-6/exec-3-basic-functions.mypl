@@ -1,0 +1,65 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+
+function void println(string s) {
+  string newline = "\n";
+  string_append(s, newline);
+  print(s);
+
+  delete newline;
+  delete s;
+}
+
+function int f1(int x, int y) {
+  int z = x + y;
+  println("... in f1");
+  return z;
+}
+
+function string f2(string x) {
+  string toPrint = "... in f2, x = ";
+  string_append(toPrint, x);
+
+  println(toPrint);
+
+  string_append(x, x);
+
+  delete toPrint;
+
+  return x;
+}
+
+function string f3(string x) {
+  string toPrint = "... in f3, after f2, x = ";
+  string_append(toPrint, x);
+
+  x = f2(x);
+  println(toPrint);
+  return x;
+}
+
+export function void main() {
+  int r1 = f1(3, 4);
+  string r1_string = itos(r1);
+  string to_print = "Should be 7: ";
+
+  string_append(to_print, r1_string);
+
+  println(to_print);
+
+  string r3 = "ab";
+  string r2 = f3(r3);
+
+  delete to_print;
+  to_print = "Should be abab: ";
+  string_append(to_print, r2);
+
+  println(to_print);
+
+  delete to_print;
+  delete r1_string;
+  delete r3;
+}
+

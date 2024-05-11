@@ -1,24 +1,32 @@
-import {
-    AVLTree, AVLTreeNode, Queue
-} from 'data-structure-typed';
+import { AVLNode, deleteAVLNode, findNodeWithValue, insertAVLNode, printTree } from './AVL';
+import { LinkedList } from './LinkedList';
 
-export class MemoryManager extends AVLTree {
-    availOffsets = new AVLTree();
+export class MemoryManager {
+    availOffsets = new Map<number, number>();
     globalOffset = 4;
     DEBUG = false;
     trace = "";
-    
+    root: AVLNode | null = null;
+
+    addNode(size: number, value: LinkedList) {
+        this.root = insertAVLNode(this.root, size, value);
+    }
+
+    deleteNode(size: number) {
+        this.root = deleteAVLNode(this.root, size);
+    }
+
     increaseGlobalOffset(size: number) {
         if(this.DEBUG) this.trace += `avl.increaseGlobalOffset(${size})\n`;
         this.globalOffset += size;
     }
 
-    error(message: string) {
+    error(message: string): never {
         // console.log(this.trace);
         throw new Error(message);
     }
 
-    add(size: number, offset: number): boolean {
+    add(size: number, offset: number): void {
         if(this.DEBUG) this.trace += `avl.add(${size}, ${offset})\n`;
 
         let startOffset = offset;
@@ -28,33 +36,35 @@ export class MemoryManager extends AVLTree {
         // console.log("hereee", this.availOffsets.has(startOffset - 1), this.availOffsets.has(endOffset + 1));
         // console.log("here2", startOffset, endOffset);
         // this.availOffsets.print();
+        const availStart = this.availOffsets.get(startOffset - 1);
+        const availEnd = this.availOffsets.get(endOffset + 1);
 
-        if (this.availOffsets.has(startOffset - 1)) {
-            const availStartOffset = this.availOffsets.get(startOffset - 1);
+        if (availStart) {
+            const availStartOffset = availStart as number;
             const availEndOffset = startOffset - 1;
             const availSize = availEndOffset - availStartOffset + 1;
 
             this.availOffsets.delete(availStartOffset);
             this.availOffsets.delete(availEndOffset);
             
-            const availSizeNode = this.getNode(availSize);
+            const availSizeNode = findNodeWithValue(this.root, availSize);
 
             if(!availSizeNode) this.error("(2) availOffsets and free_mem are out of sync");
 
-            const sizeQueue: Queue = availSizeNode?.value;
+            const sizeQueue: LinkedList = availSizeNode.value;
             
-            sizeQueue.delete(availStartOffset);
+            sizeQueue.deleteElementWithValue(availStartOffset);
 
-            if(sizeQueue.size === 0) {
-                super.delete(availSize);
+            if(sizeQueue.length === 0) {
+                this.deleteNode(availSize);
             }
 
             startOffset = availStartOffset;
 
         } 
         
-        if (this.availOffsets.has(endOffset + 1)) {
-            const availEndOffset = this.availOffsets.get(endOffset + 1);
+        if (availEnd) {
+            const availEndOffset = availEnd as number;
             const availStartOffset = endOffset + 1;
             const availSize = availEndOffset - availStartOffset + 1;
             
@@ -70,20 +80,20 @@ export class MemoryManager extends AVLTree {
             // console.log(Array.from(this.availOffsets.values()));
 
 
-            const availSizeNode = this.getNode(availSize);
+            const availSizeNode = findNodeWithValue(this.root, availSize);
 
             // console.log("availSize", availStartOffset, availEndOffset, availSize);
             // console.log("current", startOffset, endOffset, size);
             // console.log(this.print())
 
-            if(!availSizeNode) this.error("(1) availOffsets and free_mem are out of sync");
+            if(availSizeNode == null) this.error("(1) availOffsets and free_mem are out of sync");
 
-            const sizeQueue: Queue = availSizeNode?.value;
+            const sizeQueue: LinkedList = availSizeNode.value;
             
-            sizeQueue.delete(availStartOffset);
+            sizeQueue.deleteElementWithValue(availStartOffset);
 
-            if(sizeQueue.size === 0) {
-                super.delete(availSize);
+            if(sizeQueue.length === 0) {
+                this.deleteNode(availSize);
             }
 
             // console.log(availStartOffset, availEndOffset, startOffset, endOffset, "=================-----==");
@@ -101,15 +111,15 @@ export class MemoryManager extends AVLTree {
             // offset. We don't need to do anything with availOffsets
             // since we haven't added anything to it
             this.globalOffset = this.globalOffset - size;
-            return true;
+            return;
             // startOffset = 4;
             // endOffset = 4 + size - 1;
         }
 
 
   
-        this.availOffsets.add(startOffset, endOffset);
-        this.availOffsets.add(endOffset, startOffset);
+        this.availOffsets.set(startOffset, endOffset);
+        this.availOffsets.set(endOffset, startOffset);
 
         // console.log("====");
         // this.availOffsets.print();
@@ -117,13 +127,15 @@ export class MemoryManager extends AVLTree {
         // console.log(Array.from(this.availOffsets.values()));
         // console.log("====");
 
-        const node = super.getNode(size);
+        const node = findNodeWithValue(this.root, size);
 
         if (node) {
-            (node.value as Queue).push(startOffset);
-            return true;
+            node.value.push(startOffset);
+            return;
         } else {
-            return super.add(size, new Queue([startOffset]));
+            this.addNode(size, new LinkedList(startOffset));
+            return;
+            // return super.add(size, new Queue([startOffset]));
         }
     }
 
@@ -131,7 +143,7 @@ export class MemoryManager extends AVLTree {
 
     }
 
-    getOffset(requestedSize: number): [number, number] | undefined {
+    getOffset(requestedSize: number): number | undefined {
         if(this.DEBUG) this.trace += `avl.getOffset(${requestedSize})\n`;
 
         const node = this.findClosestLargestValue(requestedSize);
@@ -139,12 +151,12 @@ export class MemoryManager extends AVLTree {
         // TODO make it so the value isn't disproportionately
         // larger than the requested value
         if (node) {
-            const valueQueue = node.value as Queue;
+            const valueQueue = node.value;
             const size = node.key;
-            const offset = valueQueue.shift();
+            const offset = valueQueue.deleteHead() as number;
 
-            if (valueQueue.size == 0) {
-                super.delete(size);
+            if (valueQueue.length == 0) {
+                this.deleteNode(size);
             }
 
             this.availOffsets.delete(offset);
@@ -156,18 +168,18 @@ export class MemoryManager extends AVLTree {
                 this.add(remainingBytes, offset + requestedSize);
             }
 
-            return [offset, requestedSize];
+            return offset;
         } else {
             return undefined;
         }
     }
 
-    findClosestLargestValue(value: number): AVLTreeNode | undefined {
-        if (!this.root) return undefined;
+    findClosestLargestValue(value: number): AVLNode | null {
+        if (!this.root) return null;
 
-        let current: AVLTreeNode | undefined = this.root;
+        let current: AVLNode | null = this.root;
         let found = false;
-        let lastNode: AVLTreeNode | undefined = undefined;
+        let lastNode: AVLNode | null = null;
 
         while (current && !found) {
             if (value < current.key) {
@@ -181,17 +193,35 @@ export class MemoryManager extends AVLTree {
             }
         }
 
-        if (!lastNode) return undefined;
+        if (!lastNode) return null;
 
         return lastNode;
     }
 }
 
-// const avl = new ModifiedAVLTree();
+// let start = performance.now();
+// for(let i = 0; i < 10000000; i++){
+//     avl.add(i);
+// }
+
+// console.log(performance.now() - start);
+
+
+// start = performance.now();
+// let optimizedAVL: AVLNode | null = null;
+
+// for(let i = 0; i < 10000000; i++){
+//     optimizedAVL = insertAVLNode(optimizedAVL, i);
+// }
+
+// console.log(performance.now() - start);
+
+// const avl = new MemoryManager();
+
 // avl.add(4, 16);
 // avl.add(20, 20);
 
-// avl.print();
+// // avl.print();
 
 // avl.getOffset(16)
 // avl.increaseGlobalOffset(16)
@@ -218,3 +248,5 @@ export class MemoryManager extends AVLTree {
 // avl.getOffset(48)
 // avl.increaseGlobalOffset(48)
 // avl.add(48, 32)
+
+// console.log(printTree(avl.root, "", false));

@@ -1,0 +1,24 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+export function void main() {
+
+  print("Normal String\n");
+
+  string toPrint = "Should be '24': ";
+  string_append(toPrint, itos(stoi("23") + 1));
+  print(toPrint);
+  print("\n");
+
+  toPrint = "Should be '3.5': ";
+  string_append(toPrint, dtos(stod("3.25") + 0.25));
+  print(toPrint);
+  print("\n");
+
+  toPrint = "Should be '7': ";
+  string_append(toPrint, itos(length("foo bar")));
+  print(toPrint);
+  print("\n");
+}
+

@@ -100,7 +100,11 @@ export class Lexer {
     }
 
     isSpace(char: string) {
-        return char == " " || char == "\n" || char == "\t";
+        return char == " " || char == "\t" || this.isNewLine(char);
+    }
+
+    isNewLine(char: string) {
+        return char === "\r" || char === "\n";
     }
 
     is_valid_id(ch: string) {
@@ -127,7 +131,7 @@ export class Lexer {
 
             // If it's a new line, we must reset the 
             // column number and increment column number
-            if (this.lexeme == "\n") {
+            if (this.isNewLine(this.lexeme)) {
                 this.column = 0;
                 this.line += 1;
             }
@@ -155,7 +159,7 @@ export class Lexer {
 
             // Since we don't support multiline comments
             // we should stop when we read a newline or EOF
-            while (nextCh != "\n" && !this.eof(nextCh)) {
+            while (!this.isNewLine(nextCh) && !this.eof(nextCh)) {
                 this.read()
                 this.lexeme += nextCh;
                 nextCh = this.peek();
@@ -172,7 +176,7 @@ export class Lexer {
         this.token_type = TokenType.STRING_VAL;
         this.lexeme = ""
 
-        while (nextCh != "\"" && !this.eof(nextCh) && nextCh != "\n") {
+        while (nextCh != "\"" && !this.eof(nextCh) && !this.isNewLine(nextCh)) {
             this.read()
             this.lexeme += nextCh;
             nextCh = this.peek();
@@ -186,7 +190,7 @@ export class Lexer {
         }
     }
 
-    handle_ambiguous_tokens(this) {
+    handle_ambiguous_tokens() {
         let tempLexeme = this.lexeme;
 
         switch (tempLexeme) {
@@ -220,6 +224,7 @@ export class Lexer {
         }
 
         if (tempLexeme in ambiguous_char_map) {
+            // @ts-expect-error
             this.token_type = ambiguous_char_map[tempLexeme];
             this.lexeme = tempLexeme;
         }
@@ -286,6 +291,7 @@ export class Lexer {
 
 
         if (this.lexeme in multi_char_map){
+            // @ts-expect-error
             this.token_type = multi_char_map[this.lexeme];
         }
         else if (this.lexeme.length == 1 && !this.is_valid_id(this.lexeme)) {
@@ -319,6 +325,7 @@ export class Lexer {
             // by just looking at one character (which includes 
             // some operators and punctuations)
 
+            // @ts-expect-error
             this.token_type = single_char_map[this.lexeme];
         }
         else if (this.isNumeric(this.lexeme)) {

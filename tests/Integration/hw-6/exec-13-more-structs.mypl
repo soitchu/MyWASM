@@ -1,0 +1,35 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+struct T1 {
+  int x;
+  int y;
+}
+
+struct T2 {
+  T1 t1;
+}
+
+struct T3 {
+  T2 t2;
+}
+
+
+export function void main() {
+
+  T1 ref_1 = new T1(0, 1);
+
+  print("Should be 0: "); print(ref_1.x); print("\n");
+  print("Should be 1: "); print(ref_1.y); print("\n");
+
+  T3 ref_2 = new T3(null);
+  ref_2.t2 = new T2(null);
+  ref_2.t2.t1 = new T1(null, null);
+  ref_2.t2.t1.x = 5;
+  ref_2.t2.t1.y = 3;
+
+  print("Should be 5: "); print(ref_2.t2.t1.x); print("\n");
+  print("Should be 3: "); print(ref_2.t2.t1.y); print("\n");
+
+}

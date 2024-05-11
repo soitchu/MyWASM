@@ -1,0 +1,61 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+function array int reverse_array(array int xs) {
+  int n = length(xs);
+  array int ys = new int[n];
+  for (int i = n - 1; i >= 0; i = i - 1) {
+    ys[(n-1)-i] = xs[i];
+  }
+  return ys;
+}
+
+function void shuffle_array(array int xs) {
+  int n = length(xs);
+  for (int i = 0; i < (n-1); i = i + 2) {
+    int tmp = xs[i];
+    xs[i] = xs[i+1];
+    xs[i+1] = tmp;
+  }
+}
+
+function void print_array(array int xs) {
+  int n = length(xs);
+  print("[");
+  for (int i = 0; i < n; i = i + 1) {
+    print(xs[i]);
+    if (i != (n-1)) {
+      print(", ");
+    }
+  }
+  print("]\n");
+}
+
+
+//----------------------------------------------------------------------
+// main should print:
+//   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+//   [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+//   [9, 10, 7, 8, 5, 6, 3, 4, 1, 2]
+//   [9, 10, 7, 8, 5, 6, 3, 4, 1, 2]
+//----------------------------------------------------------------------
+export function void main() {
+  int n = 10;
+  array int a1 = new int[n];
+  for (int i = 0; i < n; i = i + 1) {
+    a1[i] = i + 1;
+  }
+  print("should be [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]: ");
+  print_array(a1);
+  array int a2 = reverse_array(a1);
+  print("should be [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]: ");
+  print_array(a2);
+  array int a3 = a2;
+  shuffle_array(a3);
+  print("should be [9, 10, 7, 8, 5, 6, 3, 4, 1, 2]: ");
+  print_array(a3);
+  print("should be [9, 10, 7, 8, 5, 6, 3, 4, 1, 2]: ");
+  print_array(a2);
+}
+
