@@ -3,5 +3,6 @@ function int a() {
 }
 
 function int main() {
-    return a();
+    // some_function();
+    return a() + 10;
 }
