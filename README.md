@@ -1,5 +1,11 @@
 MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it compiles into WASM rather than having its own interpreter. And rather than leaking memory all over the place, MyWASM has a C-like memory management. MyWASM also has its own [LSP extension](https://marketplace.visualstudio.com/items?itemName=soitchu.mywasm) for VSCode.
 
+# Presentation
+The video can be found here https://www.youtube.com/watch?v=G-fLoW5Cv_E. The slides can be found [here](./presentation/presentation.pptx)
+
+# Installation
+Make sure you have [bun](https://bun.sh/) installed. Then after cloning this repository, run `make install` to install all the required packages. Then run `make build` to build the executable. The executable then can be called to compile and run MyWASM programs.
+
 # Benchmarking
 MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. For binaryen, the O4 flag was passed, and for gcc the O3 flag was used.
 
