@@ -1,0 +1,7 @@
+function int a() {
+    return 20;
+}
+
+function int main() {
+    return a();
+}

@@ -6,6 +6,7 @@ function void modify_a() {
 
 export function void main() {
   print(a);
+  print("\n");
   modify_a();
   print(a);
 }

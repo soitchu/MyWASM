@@ -1,0 +1,10 @@
+import "imported.mypl" as B;
+
+export function void main() {
+    B::importedStruct x = new B::importedStruct(20, 3.0);
+
+    print(itos(x.a));
+    print("\n");
+
+    print(x.b);
+}
