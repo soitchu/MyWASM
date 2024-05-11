@@ -102,7 +102,7 @@ export class SemanticChecker extends Visitor{
     symbol_table = new SymbolTable()
     curr_type: ast.DataType | undefined;
     core_functions = "";
-    isCoreCode = true;
+    isCoreCode = false;
 
     overloaded_functions = {
         "print": {

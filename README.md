@@ -327,16 +327,33 @@ The length of the array, and the size of its value (either i32 or i64) are used 
 Similar to how we detect that structs are null, we can use the same technique for arrays. Before accessing the ith element, we can check whether the offset of the array pointer is 0 or not. If it is, we can throw an error.
 
 # 5. Strings
-Strings, at their core, are just int arrays, so refer to the array section to learn more. However, the way characters are stored is different from other programming languages to make the implementation more intuitive and less complex.
 
 ## 5.1 How Strings are Stored
-The way strings in MyWASM are stored is similar to char arrays in C, which means each element of the array represents a character. The way they are different is that MyWASM supports – utf-8 which is a variable-length character encoding standard. However, it always allocates 4-bytes for each character, thus wasting memory. For the sake of simplicity, I don’t plan on changing that. 
+Strings are stored using a struct:
+```
+struct String {
+  array int value;
+  int length;
+  String next;
+  bool pooled;
+}
+```
+
+`value` is the actual data that gets stored -- each index refers to an individual character. This is different from other programming languages to make the implementation more intuitive and less complex. 
+
+`length` is the length of the array in `value`. Since the strings are immutable, we can store the length in the struct, making the lookup faster and simpler.
+
+`next` is used to store the String that's been concated to an instance of a String. MyWASM does not support string concatenation using +. Refer to [5.4](#54-string-concatenation) to learn more.
+
+`pooled` is true if the String is an instance of a pooled string. This information is needed when a string needs to be deleted.
 
 ## 5.2 String pooling
 String literals are stored using WASM’s data section. 
 
 ### 5.2.1. Why?
-If MyWASM were to use string_ini to initiate the string, and then call string_ini_assign to assign each character for string literals, then that’d mean for a string that’s considerably long, it’d take multiple opcodes to assign each character. Hence, it’s more efficient to use WASM’s data section. Also, optimizing the code would take considerably longer.
+If MyWASM were to assign assign each character for string literals, then that’d mean for a string that’s considerably long, it’d take multiple opcodes to assign each character. Hence, it’s more efficient to use WASM’s data section. Also, optimizing the code would take considerably longer.
+
+Note: for very long strings, it can take binaryen more than 5 seconds to optimize the code!
 
 ### 5.2.2. How?
 The string is converted to binary during compilation. It is iterated, and each character is converted to a hex bytestring of length 8. It is highly important to note that WASM is [little-endian](https://github.com/WebAssembly/design/issues/1212), and thus the bytestring must be in little-endian as well.
@@ -361,31 +378,35 @@ In my opinion, the latter option is more intuitive than the former. However, the
         delete str;
     }
 
-When a is assigned to b, a is actually getting copied to a new string, which is then getting assigned to b. Similarly, when b is passed to some_function, it is getting copied, and then the pointer to the new string is getting passed to it. It is important to do this because strings in MyWASM are mutable, just like C char arrays. 
+When a is assigned to b, a is actually getting copied to a new string, which is then getting assigned to b. Similarly, when b is passed to `some_function`, it is getting copied, and then the pointer to the new string is getting passed to it.  
+
+Note: if `pooled` is set to `false` then the array stored in `value` is copied as well. And when it is `true`, only the reference to the `value` is copied.
 
 ## 5.4 String concatenation
 ### 5.4.1 How it works
 	
-When concatenating two strings, the length of string is added and then an appropriate amount of memory is allocated. Then both strings are copied to the new memory location (using WASM’s memory.copy), and then the new string pointer is returned.
+Strings cannot be concatenated using the "+" operator. There's a specific function for it called `string_append` that takes in two strings, and appends the second argument to the first one. The way the second argument is appened is that it copies the second String's struct, and assigns it to first's String's `next` property.
 
 ### 5.4.2 Potential problems with string concatenation
 
 Other than the problem mentioned in [5.3](#53-when-are-strings-copied), string concatenation is probably what makes strings trickier than other base types. At first, I considered not supporting string concatenation at all, since it was really easy to leak memory. For example, consider the following code:
 
     string a = “hello”;
-    a = a + “ world”;
+    string_append(a, " world")
 
-Here, a is being assigned itself after concatenating a string literal to it. However, since concatenation returns a new string pointer, the reference to a’s original pointer to is lost, thus resulting in a memory leak. The correct way of doing this would be:
+Here, the pointer to the String `"world"` is lost, and hence memory is leaked. The best way to do this would have been:
 
-    string tmp = a;
-    delete a;
-    a = tmp + " world";
-    delete tmp;
+    string a = "hello;
+    string b = " world";
 
-This is not ideal, however, there are three alternatives I could think of: either detect that a string is being concatenated and then assigned to itself, remove string concatenation, or do nothing. The first option would add unnecessary complexity to the compiler, and add a lot of overhead. So, I decided to do nothing about this, and rely on the programmer to clean up strings.
+    string_append(a, b);
+
+    delete b;
+
+This is not ideal. But it's probably the better option here since it can make string concatenation for `pooled` strings super fast. For example, let's say we have a string of length 1,000 that has been pooled already. Rather than copying the whole string to concatenate another string to it, we just need to copy the `struct` attached to it, which mean we just need to copy 16 bytes.
 
 ## 5.5 Deletion of Strings
-Since strings are just int arrays, we can just use the same method to delete it.
+When a String is deleted, the array stored in `value` is deleted only if `pooled` is set to `false`. This is because another instance of a string may refer to the same string, deleting the original array would mess things up.
 
 # 6. Imports and Namespaces
 Namespaces are implemented using a similar technique mentioned in [1.4](#14-scope-and-local-variables). Prefixes are used to differentiate between different namespaces’ functions and structs. 
