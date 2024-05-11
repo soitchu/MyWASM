@@ -4,7 +4,7 @@ MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it
 The video can be found here https://www.youtube.com/watch?v=G-fLoW5Cv_E. The slides can be found [here](./presentation/presentation.pptx)
 
 # Installation
-Make sure you have [bun](https://bun.sh/) installed. Then after cloning this repository, run `make install` to install all the required packages. Then run `make build` to build the executable. The executable then can be called to compile and run MyWASM programs.
+Make sure you have [bun](https://bun.sh/) installed. Then after cloning this repository, run `make install` to install all the required packages. Then run `make build` to build the executable. The executable then can be called to compile and run MyWASM programs. Alternatively, the executables for x86 linux and Windows can be found [here](https://github.com/Gonzaga-CPSC-326-Spring-2024/project-soitchu/releases)
 
 # Benchmarking
 MyWASM emits WAT code which is then optimized using [binaryen](https://github.com/WebAssembly/binaryen) -- the same optimizer used by [Emscripten](https://github.com/emscripten-core/emscripten). To generate the following graph the code in [./benchmark](./benchmark/) was executed. For binaryen, the O4 flag was passed, and for gcc the O3 flag was used.
