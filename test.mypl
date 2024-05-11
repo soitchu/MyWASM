@@ -1,35 +1,63 @@
-    struct Node {
-      int value;
-      Node next;
-      Map map;
+struct String {
+  array int value;
+  int length;
+  String next;
+  bool pooled;
+}
+
+export function void main() {
+  string a = itos_(0);
+  print(a);
+}
+
+function string itos_(int a) {
+  bool is_neg = a < 0;
+  int size = 0;
+
+  if(a < 0) {
+    a = a * (0 - 1);
+  }
+
+  int val = a;
+
+  if(val == 0) {
+    size = 1;
+  } else{
+    while(val > 0) {
+      size = size + 1;
+      val = val / 10;
     }
+  }
 
-    struct Map {
-        int x;
-        array int values;
+  if(is_neg) {
+    size = size + 1;
+  }
+
+  //   print("====\n");
+  // print(size);
+  // print("\n====\n");
+
+  array int result = new int[size];
+
+  if(is_neg) {
+    result[0] = 45;
+  }
+
+  val = a;
+
+  int index = 0;
+
+  if(val == 0) {
+    result[0] = 48;
+  }else{
+    while(val > 0) {
+      result[size - (index + 1)] = 48 + (val % 10);
+      index = index + 1;
+      val = val / 10;
     }
-
-    export function int main() {
-        Map a = new Map(0, null);
-        array int vals = new int[20];
-        a.values = vals;
-
-        a.values[0] = 1;
-        a.values[1] = 1;
-
-        for(int i = 2; i < 20; i = i + 1) {
-            a.values[i] =  a.values[i - 1] + a.values[i - 2];
-        }
-
-        Node first = new Node(0, null, null);
-        Node second = new Node(1, null, null);
-        Node third = new Node(2, null, null);
-
-        first.next = second;
-        second.next = third;
-        third.next = third;
-        third.map = a;
+  }
 
 
-        return first.next.next.next.next.next.map.values[19];
-    }
+
+  return new String(result, size, null, false);
+}

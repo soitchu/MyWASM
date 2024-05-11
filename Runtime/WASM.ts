@@ -87,10 +87,12 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
                 const exported = wasmModule.instance.exports as testWasmExports;
                 const input = rl.question("");
                 const stringPointer = exported.string_ini(input.length);
+                
                 for (let i = 0; i < input.length; i++) {
                     exported.string_ini_assign(stringPointer, i, input.charCodeAt(i));
                 }
-                return stringPointer;
+
+                return exported.main_string_ini_unpooled(stringPointer);
             },
 
             allocate_memory(requestedSize: number, second: boolean = false) {

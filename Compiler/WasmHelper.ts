@@ -503,7 +503,7 @@ function get_string_functions() {
   )
   
   (func $main_string_ini (param $main_main_string_ini0_str i32) (result i32)
-  (local $tmp i32)
+    (local $tmp i32)
 
     i32.const 16
     call $allocate_struct
@@ -523,6 +523,36 @@ function get_string_functions() {
     i32.const 8
     call $i32_assign_to_struct
     i32.const 1
+    local.get $tmp
+    i32.const 12
+    call $i32_assign_to_struct
+    local.get $tmp
+    return
+    i32.const 0
+    return
+  )
+
+  (func $main_string_ini_unpooled (param $str i32) (result i32)
+    (local $tmp i32)
+
+    i32.const 16
+    call $allocate_struct
+    local.set $tmp
+    local.get $str
+    call $string_to_array_int
+    local.get $tmp
+    i32.const 0
+    call $i32_assign_to_struct
+    local.get $str
+    call $length_string
+    local.get $tmp
+    i32.const 4
+    call $i32_assign_to_struct
+    i32.const 0
+    local.get $tmp
+    i32.const 8
+    call $i32_assign_to_struct
+    i32.const 0
     local.get $tmp
     i32.const 12
     call $i32_assign_to_struct
@@ -1009,6 +1039,8 @@ export function getWASMCoreFunctions(unsafe = false) {
   (func $allocate_memory (import "env" "allocate_memory") (param i32) (result i32))
   (func $deallocate_memory (import "env" "deallocate_memory") (param i32) (param i32))
   (export "string_ini" (func $string_ini))
+  (export "main_string_ini" (func $main_string_ini))
+  (export "main_string_ini_unpooled" (func $main_string_ini_unpooled))
   (export "string_ini_assign" (func $string_ini_assign))
   (global $mem (mut i32) (i32.const 0))
   (global $tmp (mut i32) (i32.const 0))
@@ -1283,7 +1315,10 @@ export function getWASMCoreFunctions(unsafe = false) {
    (local $stod__for1_i i32)
 
     local.get $stod_0_str
-    call $string_to_array_int
+    call $check_if_null
+    i32.const 0
+    i32.add
+    i32.load
     local.set $stod_0_int_arr
 
     i32.const 0
@@ -1474,7 +1509,7 @@ export function getWASMCoreFunctions(unsafe = false) {
     )
 
     local.get $main_main_stoi_0_s
-    call $delete_struct
+    call $main_string_delete
 
     local.get $main_main_stoi_0_val
     return
@@ -1513,22 +1548,30 @@ export function getWASMCoreFunctions(unsafe = false) {
     local.get $main_main_itos_0_a
     local.set $main_main_itos_0_val
 
-    (loop $loop1
-      local.get $main_main_itos_0_val
-      i32.const 0
-      i32.gt_s
-      if
-        local.get $main_main_itos_0_size
-        i32.const 1
-        i32.add
-        local.set $main_main_itos_0_size
+    local.get $main_main_itos_0_val
+    i32.const 0
+    i32.eq
+    if
+      i32.const 1
+      local.set $main_main_itos_0_size
+    else
+      (loop $loop1
         local.get $main_main_itos_0_val
-        i32.const 10
-        i32.div_s
-        local.set $main_main_itos_0_val
-        br $loop1
-      end
-    )
+        i32.const 0
+        i32.gt_s
+        if
+          local.get $main_main_itos_0_size
+          i32.const 1
+          i32.add
+          local.set $main_main_itos_0_size
+          local.get $main_main_itos_0_val
+          i32.const 10
+          i32.div_s
+          local.set $main_main_itos_0_val
+          br $loop1
+        end
+      )
+    end
 
     local.get $main_main_itos_0_is_neg
     if
@@ -1556,34 +1599,44 @@ export function getWASMCoreFunctions(unsafe = false) {
     i32.const 0
     local.set $main_main_itos_0_index
 
-    (loop $loop2
-      local.get $main_main_itos_0_val
+    local.get $main_main_itos_0_val
+    i32.const 0
+    i32.eq
+    if
+      i32.const 48
       i32.const 0
-      i32.gt_s
-      if
-        i32.const 48
+      local.get $main_main_itos_0_result
+      call $i32_set_array_elem
+    else
+      (loop $loop2
         local.get $main_main_itos_0_val
-        i32.const 10
-        i32.rem_s
-        i32.add
-        local.get $main_main_itos_0_size
-        local.get $main_main_itos_0_index
-        i32.const 1
-        i32.add
-        i32.sub
-        local.get $main_main_itos_0_result
-        call $i32_set_array_elem
-        local.get $main_main_itos_0_index
-        i32.const 1
-        i32.add
-        local.set $main_main_itos_0_index
-        local.get $main_main_itos_0_val
-        i32.const 10
-        i32.div_s
-        local.set $main_main_itos_0_val
-        br $loop2
-      end
-    )
+        i32.const 0
+        i32.gt_s
+        if
+          i32.const 48
+          local.get $main_main_itos_0_val
+          i32.const 10
+          i32.rem_s
+          i32.add
+          local.get $main_main_itos_0_size
+          local.get $main_main_itos_0_index
+          i32.const 1
+          i32.add
+          i32.sub
+          local.get $main_main_itos_0_result
+          call $i32_set_array_elem
+          local.get $main_main_itos_0_index
+          i32.const 1
+          i32.add
+          local.set $main_main_itos_0_index
+          local.get $main_main_itos_0_val
+          i32.const 10
+          i32.div_s
+          local.set $main_main_itos_0_val
+          br $loop2
+        end
+      )
+    end
 
     i32.const 16
     call $allocate_struct

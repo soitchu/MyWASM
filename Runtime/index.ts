@@ -30,10 +30,13 @@ export async function init(
   wasmInstance.main();
 
   if (debug) {
+    const memArray = new Uint32Array(memory.buffer);
     console.log("\n==========================");
     console.log(`Time taken: ${performance.now() - start}ms`);
     console.log("\nMemory:");
-    console.log(new Uint32Array(memory.buffer));
+    console.log(memArray);
+    console.log("\nUsable Memory:");
+    console.log(new Uint32Array(memory.buffer, memArray[1]));
     console.log("==========================\n");
   }
 

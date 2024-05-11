@@ -1,0 +1,36 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+
+struct TreeNode {
+  int val;
+  array TreeNode children;
+}
+
+export function void main() {
+  TreeNode root = new TreeNode(20, new TreeNode[2]);
+  root.children[0] = new TreeNode(10, null);
+  root.children[1] = new TreeNode(30, null);
+  root.children[0].children = new TreeNode[2];
+  root.children[0].children[0] = new TreeNode(null, null);
+  root.children[0].children[1] = new TreeNode(null, null);
+  root.children[0].children[0].val = 5;
+  root.children[0].children[1].val = 15;
+
+  print("should be 20: ");
+  print(root.val);
+  print("\n");
+  print("should be 10: ");
+  print(root.children[0].val);
+  print("\n");
+  print("should be 30: ");
+  print(root.children[1].val);
+  print("\n");
+  print("should be 5: ");
+  print(root.children[0].children[0].val);
+  print("\n");
+  print("should be 15: ");   
+  print(root.children[0].children[1].val);
+  print("\n");
+}

@@ -1,0 +1,21 @@
+import "prime.mypl" as prime;
+
+export function int main() {
+    print("Enter a number: ");
+    string a = input();
+    int num = stoi(a);
+
+    if(prime::isPrime(num)) {
+        string result = " is a prime";
+        string_append(a, result);
+        delete result;
+    } else {
+        string result = " is not a prime";
+        string_append(a, result);
+        delete result;
+    }
+
+    print(a);
+
+    delete a;
+}

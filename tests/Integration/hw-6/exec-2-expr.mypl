@@ -1,0 +1,74 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+
+export function void main() {
+  // basic integers
+  print("Integer Tests: \n");
+  print("  Should be '5': "); print(2 + 3); print("\n");
+  print("  Should be '9': "); print(2 + 3 + 4); print("\n");
+  print("  Should be '6': "); print(2 * 3); print("\n");
+  print("  Should be '6': "); print(1 * 2 * 3); print("\n");
+  print("  Should be '1': "); print(3 / 2); print("\n");
+  print("  Should be '2': "); print(6 / 3); print("\n");
+  print("  Should be '-1': "); print(0 - 1); print("\n");
+  print("  Should be true 3 < 4: ");
+  if (3 < 4) {print("true\n");} else {print("false\n");}
+  print("  Should be true 3 <= 4: ");
+  if (3 <= 4) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4 > 3: ");
+  if (4 > 3) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4 >= 3: ");
+  if (4 >= 3) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4 == 4: ");
+  if (4 == 4) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4 != 3: ");
+  if (4 != 3) {print("true\n");} else {print("false\n");}
+  print("  Should be true not 4 != 4: ");
+  if (not (4 != 4)) {print("true\n");} else {print("false\n");}
+
+  // simple doubles
+  print("Double Tests: \n");
+  print("  Should be '5.5': "); print(2.3 + 3.2); print("\n");
+  print("  Should be '9.25': "); print(2.05 + 3.1 + 4.1); print("\n");
+  print("  Should be '6.75': "); print(2.25 * 3.0); print("\n");
+  print("  Should be '9.375': "); print(1.25 * 2.5 * 3.0); print("\n");
+  print("  Should be '1.75': "); print(3.5 / 2.0); print("\n");
+  print("  Should be '2.08': "); print(6.5 / 3.125); print("\n");
+  print("  Should be '-3.4': "); print(0.0 - 3.4); print("\n");
+  print("  Should be true 3.1 < 4.2: ");
+  if (3.1 < 4.2) {print("true\n");} else {print("false\n");}
+  print("  Should be true 3.1 <= 4.2: ");
+  if (3.1 <= 4.2) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4.2 > 3.1: ");
+  if (4.2 > 3.1) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4.2 >= 3.1: ");
+  if (4.2 >= 3.1) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4.2 == 4.2: ");
+  if (4.2 == 4.2) {print("true\n");} else {print("false\n");}
+  print("  Should be true 4.2 != 3.1: ");
+  if (4.2 != 3.1) {print("true\n");} else {print("false\n");}
+
+  // simple bools
+  print("Bool Tests: \n");  
+  print("  Should be true (not false): ");
+  if (not false) {print("true\n");} else {print("false\n");}
+  print("  Should be true (true and true): ");
+  if (true and true) {print("true\n");} else {print("false\n");}
+  print("  Should be true (not false and true): ");
+  if (not false and true) {print("true\n");} else {print("false\n");}
+  print("  Should be true ((not false) and true): ");
+  if ((not false) and true) {print("true\n");} else {print("false\n");}
+  print("  Should be true (not (true and false)): ");
+  if (not true and false) {print("true\n");} else {print("false\n");}  
+  print("  Should be true (true or false): ");
+  if (true or false) {print("true\n");} else {print("false\n");}  
+  print("  Should be true (false or true): ");
+  if (false or true) {print("true\n");} else {print("false\n");}  
+  print("  Should be true (false or (not false)): ");
+  if (false or (not false)) {print("true\n");} else {print("false\n");}  
+  print("  Should be true (not false or false): ");
+  if (not false or false) {print("true\n");} else {print("false\n");}
+
+}

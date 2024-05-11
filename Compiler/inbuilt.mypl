@@ -9,6 +9,10 @@ function String string_ini(String str) {
   return new String(string_to_array_int(str), length_string(str), null, true);
 }
 
+function String string_ini_unpooled(String str) {
+  return new String(string_to_array_int(str), length_string(str), null, false);
+}
+
 function void string_append(String string_1, String string_2) {
   string_2 = string_copy(string_2);
   String current = string_1;

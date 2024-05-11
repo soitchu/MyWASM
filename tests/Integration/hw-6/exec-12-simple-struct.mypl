@@ -1,0 +1,25 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+struct Type1 {
+   int x;
+   int y;
+}
+
+export function void main() {
+
+  Type1 t1 = new Type1(0, 1);
+  print("t1.x should be 0: "); print(t1.x); print("\n");
+  print("t1.y should be 1: "); print(t1.y); print("\n");
+
+  t1.x = 5;
+  t1.y = 6;
+  print("t1.x should now be 5: "); print(t1.x); print("\n");
+  print("t1.y should now be 6: "); print(t1.y); print("\n");
+
+  t1.x = t1.y + 1;
+  t1.y = t1.x + 1;
+  print("t1.x should now be 7: "); print(t1.x); print("\n");
+  print("t1.y should now be 8: "); print(t1.y); print("\n");
+}

@@ -1,0 +1,112 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+
+//----------------------------------------------------------------------
+// tree node that holds an int value
+//----------------------------------------------------------------------
+struct Node {
+  int value;
+  Node left;
+  Node right;
+}
+
+
+//----------------------------------------------------------------------
+// create a new tree
+//----------------------------------------------------------------------
+function Node make_tree(int val) {
+  return new Node(val, null, null);
+}
+
+
+//----------------------------------------------------------------------
+// insert a value into the given tree
+// assumes root is not nil 
+//----------------------------------------------------------------------
+function void insert(Node root, int val) {
+  if (root == null) {
+    return null;
+  }
+  if (val <= root.value) {
+    if (root.left == null) {
+      root.left = make_tree(val);
+    }
+    else {
+      insert(root.left, val);
+    }
+  }
+  else {
+    if (root.right == null) {
+      root.right = make_tree(val);
+    }
+    else {
+      insert(root.right, val);
+    }
+  }
+}
+
+
+//----------------------------------------------------------------------
+// print out the tree in sorted order
+//----------------------------------------------------------------------
+function void print_tree(Node root) {
+  if (root != null) {
+    print_tree(root.left);
+    print(root.value);
+    print(" ");
+    print_tree(root.right);
+  }
+}
+
+
+//----------------------------------------------------------------------
+// get the height of the tree
+//----------------------------------------------------------------------
+function int height(Node root) {
+  if (root == null) {
+    return 0;
+  }
+  else {
+    int left_height = height(root.left);
+    int right_height = height(root.right);
+    if (left_height >= right_height) {
+      return 1 + left_height;
+    }
+    else {
+      return 1 + right_height;
+    }
+  }
+}
+
+//
+// main
+//
+export function void main() {
+
+  //
+  // create a tree and print it
+  // should print ...
+  //   Tree Values: 1 2 5 7 10 12 13 14 15
+  //   Tree Height: 5
+  //
+
+  Node tree = make_tree(10);
+
+  insert(tree, 5);
+  insert(tree, 15);
+  insert(tree, 2);
+  insert(tree, 12);
+  insert(tree, 7);
+  insert(tree, 1);
+  insert(tree, 13);
+  insert(tree, 14);
+  print("Tree Values: ");
+  print_tree(tree);
+  print("\n");
+  print("Tree Height: ");
+  print(height(tree));
+  print("\n");
+
+}
