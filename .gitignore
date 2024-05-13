@@ -4,3 +4,4 @@ out
 a.wasm
 test.mypl
 mywasm
+mypl-vscode-extension/
