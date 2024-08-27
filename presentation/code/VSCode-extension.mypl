@@ -1,8 +1,0 @@
-function int a() {
-    return 20;
-}
-
-function int main() {
-    // some_function();
-    return a() + 10;
-}

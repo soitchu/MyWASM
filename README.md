@@ -1,8 +1,5 @@
 MyWASM is an extension of MyPL. It has a grammar that's similar to MyPL's but it compiles into WASM rather than having its own interpreter. And rather than leaking memory all over the place, MyWASM has a C-like memory management. MyWASM also has its own [LSP extension](https://marketplace.visualstudio.com/items?itemName=soitchu.mywasm) for VSCode.
 
-# Presentation
-The video can be found here https://www.youtube.com/watch?v=G-fLoW5Cv_E. The slides can be found [here](./presentation/presentation.pptx)
-
 # Installation
 Make sure you have [bun](https://bun.sh/) installed. Then after cloning this repository, run `make install` to install all the required packages. Then run `make build` to build the executable. The executable then can be called to compile and run MyWASM programs. Alternatively, the executables for x86 linux and Windows can be found [here](https://github.com/Gonzaga-CPSC-326-Spring-2024/project-soitchu/releases)
 
