@@ -1,0 +1,36 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+
+function bool is_prime(int n) {
+  int m = n / 2;
+  int v = 2;
+  while (v <= m) {
+    int r = n / v;
+    int p = r * v;
+    if (p == n) {
+      return false;
+    }
+    v = v + 1;
+  }
+  return true;
+}
+
+
+export function void main() {
+  print("Please enter integer values to sum (prime number to quit)\n");
+  int sum = 0;
+  while (true) {
+    print(">> Enter an int: ");
+    int val = stoi(input());
+    if (is_prime(val)) {
+      print("The sum is: ");
+      print(sum);
+      print("\n");
+      print("Goodbye!\n");
+      return null;
+    }
+    sum = sum + val;
+  }
+}

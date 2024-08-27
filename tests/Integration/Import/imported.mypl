@@ -1,0 +1,8 @@
+struct importedStruct {
+    int a;
+    double b;
+}
+
+function importedStruct importedFunction() {
+    return new importedStruct(10, 20.0);
+}

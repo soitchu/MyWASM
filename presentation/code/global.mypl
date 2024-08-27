@@ -1,0 +1,12 @@
+int a = 10;
+
+function void modify_a() {
+  a = 200;
+}
+
+export function void main() {
+  print(a);
+  print("\n");
+  modify_a();
+  print(a);
+}

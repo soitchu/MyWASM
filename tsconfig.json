@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": true,
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "strict": true,
+        "lib": ["ES2021", "DOM", "ES2022"],
+        "outDir": "./out",
+    },
+    "include": [
+        "./Compiler/**/*.ts",
+    ]
+}

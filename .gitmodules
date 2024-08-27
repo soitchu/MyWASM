@@ -1,0 +1,3 @@
+[submodule "mypl-vscode-extension"]
+	path = mypl-vscode-extension
+	url = https://github.com/soitchu/mypl-vscode-extension

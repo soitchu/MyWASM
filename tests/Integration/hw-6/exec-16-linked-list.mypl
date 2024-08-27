@@ -1,0 +1,40 @@
+//----------------------------------------------------------------------
+// HW-6 Test Program
+//----------------------------------------------------------------------
+
+struct Node {
+  int val;
+  Node next;
+}
+
+
+export function void main() {
+
+  // creates a linked list: [10, 20, 30, 40, 50]
+
+  Node head = null;
+  int len = 5;
+
+  for (int i = 0; i <= (len - 1); i = i + 1) {
+    Node ptr = new Node(null, null);
+    ptr.val = (len - i) * 10;
+    ptr.next = head;
+    head = ptr;
+  }
+
+  // prints the list
+
+  print("[");
+  int i = 0;
+  Node ptr = head;
+  while (i < len) {
+    print(ptr.val);
+    if (i < (len - 1)) {
+      print(", ");
+    }
+    ptr = ptr.next;
+    i = i + 1;
+  }
+  print("]\n");
+
+}

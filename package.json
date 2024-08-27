@@ -1,0 +1,23 @@
+{
+  "name": "mypl",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "@types/node": "^20.12.2",
+    "@types/prompt-sync": "^4.2.3"
+  },
+  "dependencies": {
+    "@swc/core": "^1.4.11",
+    "binaryen": "^116.0.0",
+    "commander": "^12.0.0",
+    "readline-sync": "^1.4.10",
+    "wabt": "^1.0.32"
+  }
+}

@@ -1,0 +1,20 @@
+export function int main() {
+    print("Enter a number: ");
+    string a = input();
+    int num = stoi(a);
+
+    int factor = 2;
+    bool shouldBreak = num == 1;
+
+    while(not shouldBreak) {
+        if((num % factor) == 0) {
+            num = num / factor;
+            print(factor);
+            print("\n");
+        }
+
+        shouldBreak = (num == 1) or (num <= factor);
+
+        factor = factor + 1;
+    }
+}

@@ -1,0 +1,49 @@
+struct Config {
+  double start;
+  double end;
+  double stepCount;
+  double step;
+}
+
+int max_iteration = 1000;
+
+export function void main() {
+  string box = "□";
+  string darkBox = "■";
+
+  Config configY = new Config((0.0 - 0.637), (0.0 - 0.6610), 100.0, null);
+  // Config configY = new Config((0.308), 0.370, 200.0, null);
+  configY.step = (configY.end - configY.start) / configY.stepCount;
+
+
+  Config configX = new Config((0.0 - 0.0473), (0.0 - 0.0146), 150.0, null);
+  // Config configX = new Config((0.360), 0.444, 500.0, null);
+  configX.step = (configX.end - configX.start) / configX.stepCount;
+
+  for(double y0 = configY.start; y0 > configY.end; y0 = y0 + configY.step) {
+    for(double x0 = configX.start; x0 < configX.end; x0 = x0 + configX.step) {
+      double x = 0.0;
+      double y = 0.0;
+      int iteration = 0;
+
+      while((((x * x) + (y * y)) <= 4.0) and (iteration < max_iteration)) {
+        double xtemp = ((x * x) - (y * y)) + x0;
+        y = (2.0 * x * y) + y0;
+        x = xtemp;
+        iteration = iteration + 1;
+      }
+
+      if(iteration == max_iteration) {
+        print(box);
+      } else {
+        print(darkBox);
+      }
+    }
+    print("\n");
+  }
+
+  delete configY;
+  delete configX;
+  delete darkBox;
+  delete box;
+}
