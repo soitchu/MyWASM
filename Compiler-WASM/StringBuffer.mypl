@@ -1,0 +1,29 @@
+string stream = null;
+int index = 0;
+
+struct String {
+  array int value;
+  int length;
+  String next;
+  bool pooled;
+}
+
+function void ini(string code) {
+    index = (0 - 1);
+    stream = code;
+    delete code;
+}
+    
+function string read_char(){
+    // Returns and removes a single character in stream.
+    index = index + 1;
+    return get(stream, index);
+}
+
+function string peek_char(){
+    return get(stream, index);
+}
+
+function void close() {
+    delete stream;
+}

@@ -1,0 +1,109 @@
+import "StringBuffer.mypl" as StringBuffer;
+
+int column = 1;
+int line  = 1;
+string in_stream = null;
+string lexeme = null;
+string token_type = null;
+
+function void read() {
+    if(lexeme != null) {
+        delete lexeme;
+    }
+
+    column = column + 1;
+    lexeme = StringBuffer::read_char(); 
+}
+
+function void peek() {
+    if(lexeme != null) {
+        delete lexeme;
+    }
+
+    lexeme = StringBuffer::peek_char();
+}
+
+function bool isNumeric(string str) {
+    // this can be optimized
+    string char = get(str, 0);
+    int charCode = stoi(char) + 48;
+    delete char;
+    delete str;
+    return (charCode >= 48) and (charCode <= 57);
+}
+
+function bool isAlpha(string str) {
+    // this can be optimized
+    string char = get(str, 0);
+    int charCode = stoi(char) + 48;
+    delete char;
+    delete str;
+    return ((charCode >= 65) and (charCode <= 90)) or ((charCode >= 97) and (charCode <= 122));
+}
+
+function bool isSpace(string str) {
+    // this can be optimized
+    string char = get(str, 0);
+    int charCode = stoi(char) + 48;
+    delete char;
+    // Space = 32, tab = 9
+    bool result = ((charCode == 32) or (charCode == 9) or isNewLine(str));
+
+    delete str;
+    return result;
+}
+
+function bool isNewLine(string str) {
+    // this can be optimized
+    string char = get(str, 0);
+    int charCode = stoi(char) + 48;
+    delete char;
+    delete str;
+
+    // CR = 13, LF = 10
+    return ((charCode == 13) or (charCode == 10));
+}
+
+function bool is_valid_id(string str) {
+    // this can be optimized
+    string char = get(str, 0);
+    int charCode = stoi(char) + 48;
+    delete char;
+    delete str;
+
+    return isAlpha(str) or (charCode == 95) or isNumeric(str);
+}
+
+function void handle_whitespaces() {
+    peek();
+    while (isSpace(lexeme)) {
+        // Since we know that the character is
+        // a whitespace, we can eliminate it
+        read();
+
+        // If it's a new line, we must reset the 
+        // column number and increment column number
+        if (isNewLine(lexeme)) {
+            column = 0;
+            line = line + 1;
+        }
+
+        peek();
+    }
+
+    read();
+}
+
+
+export function int main() {
+    string code = "        int a = 10;";
+    StringBuffer::ini(code);
+    read();
+
+    handle_whitespaces();
+    // print(lexeme);
+    // print("\n");
+
+    delete code;
+    StringBuffer::close();
+}

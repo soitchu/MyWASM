@@ -77,6 +77,14 @@ function void string_delete(String str) {
   }
 }
 
+function String getw(String str, int index) {
+  array int val = str.value;
+  array int result = new int[1];
+
+  result[0] = val[index];
+  return string_ini_unpooled(result);
+}
+
 // function int stoi_(String s) {
 //   String current = s;
 //   int val = 0;

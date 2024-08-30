@@ -22,6 +22,7 @@ const DONT_COPY_STRINGS_FOR = [
     'main_string_append',
     'string_append',
     'main_string_copy',
+    'length'
 ];
 
 const SUPPORTED_BINARY_OPS = {
@@ -307,13 +308,13 @@ export class SemanticChecker extends Visitor{
                 ast.Token(ast.TokenType.ID, "get", 0, 0),
                 [
                     new ast.VarDef(
+                        WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value_", 0, 0)
+                    ),
+                    new ast.VarDef(
                         WASM.DATA_TYPES["int"],
                         ast.Token(ast.TokenType.ID, "value", 0, 0)
                     ),
-                    new ast.VarDef(
-                        WASM.DATA_TYPES["string"],
-                        ast.Token(ast.TokenType.ID, "value_", 0, 0)
-                    )
                 ],
                 []
             ),
@@ -1498,7 +1499,7 @@ export class SemanticChecker extends Visitor{
             
             // @ts-expect-error
             if ((!first_type.is_array) && (!SUPPORTED_BINARY_OPS[first_type.type_name.token_type].includes(op))){
-                this.error(`(24) Can\'t use operator "${op}" on "${first_type.type_name.lexeme}"s`, expr.op)
+                // this.error(`(24) Can\'t use operator "${op}" on "${first_type.type_name.lexeme}"s`, expr.op)
             }
 
             if(BOOLEAN_OPS.includes(op as string)){

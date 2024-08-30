@@ -1887,31 +1887,35 @@ export function getWASMCoreFunctions(unsafe = false) {
    return
  )
 
-  (func $get (param $get_0_index i32) (param $get_0_str i32) (result i32)
-   (local $get_0_arr_int i32)
-   (local $get_0_result_int i32)
+(func $get (param $main_main_getw0_str i32) (param $main_main_getw0_index i32) (result i32)
+ (local $main_main_getw0_val i32)
+ (local $main_main_getw0_result i32)
+ (local $tmp i32)
 
-    local.get $get_0_str
-    call $string_to_array_int
-    local.set $get_0_arr_int
+  local.get $main_main_getw0_str
+  call $check_if_null
+  i32.const 0
+  i32.add
+  i32.load
+  local.set $main_main_getw0_val
 
-    i32.const 1
-    call $i32_new_array
-    local.set $get_0_result_int
+  i32.const 1
+  call $i32_new_array
+  local.set $main_main_getw0_result
 
-    local.get $get_0_index
-    local.get $get_0_arr_int
-    call $i32_get_array_elem
-    i32.const 0
-    local.get $get_0_result_int
-    call $i32_set_array_elem
+  local.get $main_main_getw0_index
+  local.get $main_main_getw0_val
+  call $i32_get_array_elem
+  i32.const 0
+  local.get $main_main_getw0_result
+  call $i32_set_array_elem
 
-    local.get $get_0_result_int
-    call $array_int_to_string
-    return
-    i32.const 0
-    return
-  )
+  local.get $main_main_getw0_result
+  call $main_string_ini_unpooled
+  return
+  i32.const 0
+  return
+)
   
   (func $delete_struct (param $delete_struct0_struct_pointer i32)
    (local $delete_struct0_length i32)
