@@ -11,7 +11,6 @@ struct String {
 function void ini(string code) {
     index = (0 - 1);
     stream = code;
-    delete code;
 }
     
 function string read_char(){

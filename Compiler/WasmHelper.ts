@@ -1508,9 +1508,6 @@ export function getWASMCoreFunctions(unsafe = false) {
       end
     )
 
-    local.get $main_main_stoi_0_s
-    call $main_string_delete
-
     local.get $main_main_stoi_0_val
     return
     i32.const 0

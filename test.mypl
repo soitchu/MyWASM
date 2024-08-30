@@ -1,12 +1,9 @@
-function void append(string b) {
-  string a = "!";
-  string_append(b, a);
-  delete a;
-  // delete b;
-}
-
 export function void main() {
-  string a = "hello world";
-  append(a);
+  string a = "1";
+  int b = stoi(a) + 2;
+
+  print(b);
   print(a);
+
+
 }

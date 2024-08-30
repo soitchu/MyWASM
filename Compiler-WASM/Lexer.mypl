@@ -7,10 +7,6 @@ string lexeme = null;
 string token_type = null;
 
 function void read() {
-    if(lexeme != null) {
-        delete lexeme;
-    }
-
     column = column + 1;
     lexeme = StringBuffer::read_char(); 
 }
@@ -96,14 +92,19 @@ function void handle_whitespaces() {
 
 
 export function int main() {
-    string code = "        int a = 10;";
+    string code = "12        int a = 10;";
     StringBuffer::ini(code);
     read();
+    print(lexeme);    
+    read();
+    print(lexeme);    
 
-    handle_whitespaces();
+
+
+
+    // handle_whitespaces();
     // print(lexeme);
     // print("\n");
 
-    delete code;
     StringBuffer::close();
 }
