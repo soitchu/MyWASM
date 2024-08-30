@@ -9,14 +9,15 @@ struct String {
 }
 
 function void ini(string code) {
-    index = (0 - 1);
+    index = 0;
     stream = code;
 }
     
 function string read_char(){
     // Returns and removes a single character in stream.
+    string char = get(stream, index);
     index = index + 1;
-    return get(stream, index);
+    return char;
 }
 
 function string peek_char(){

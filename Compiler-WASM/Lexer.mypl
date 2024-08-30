@@ -7,6 +7,9 @@ string lexeme = null;
 string token_type = null;
 
 function void read() {
+    if(lexeme != null) {
+        delete lexeme;
+    }
     column = column + 1;
     lexeme = StringBuffer::read_char(); 
 }
@@ -15,7 +18,6 @@ function void peek() {
     if(lexeme != null) {
         delete lexeme;
     }
-
     lexeme = StringBuffer::peek_char();
 }
 
@@ -30,31 +32,21 @@ function bool isNumeric(string str) {
 
 function bool isAlpha(string str) {
     // this can be optimized
-    string char = get(str, 0);
-    int charCode = stoi(char) + 48;
-    delete char;
-    delete str;
+    int charCode = stoi(str) + 48;
     return ((charCode >= 65) and (charCode <= 90)) or ((charCode >= 97) and (charCode <= 122));
 }
 
 function bool isSpace(string str) {
-    // this can be optimized
-    string char = get(str, 0);
-    int charCode = stoi(char) + 48;
-    delete char;
+    int charCode = stoi(str) + 48;
     // Space = 32, tab = 9
     bool result = ((charCode == 32) or (charCode == 9) or isNewLine(str));
 
-    delete str;
     return result;
 }
 
 function bool isNewLine(string str) {
     // this can be optimized
-    string char = get(str, 0);
-    int charCode = stoi(char) + 48;
-    delete char;
-    delete str;
+    int charCode = stoi(str) + 48;
 
     // CR = 13, LF = 10
     return ((charCode == 13) or (charCode == 10));
@@ -62,11 +54,7 @@ function bool isNewLine(string str) {
 
 function bool is_valid_id(string str) {
     // this can be optimized
-    string char = get(str, 0);
-    int charCode = stoi(char) + 48;
-    delete char;
-    delete str;
-
+    int charCode = stoi(str) + 48;
     return isAlpha(str) or (charCode == 95) or isNumeric(str);
 }
 
@@ -92,19 +80,11 @@ function void handle_whitespaces() {
 
 
 export function int main() {
-    string code = "12        int a = 10;";
+    string code = "    int a = 10;";
     StringBuffer::ini(code);
-    read();
-    print(lexeme);    
-    read();
-    print(lexeme);    
 
-
-
-
-    // handle_whitespaces();
-    // print(lexeme);
-    // print("\n");
+    handle_whitespaces();
+    print(lexeme);
 
     StringBuffer::close();
 }

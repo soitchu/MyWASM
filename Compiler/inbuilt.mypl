@@ -77,6 +77,7 @@ function void string_delete(String str) {
   }
 }
 
+// TODO: This doesn't work with concatenated strings
 function String getw(String str, int index) {
   array int val = str.value;
   array int result = new int[1];
