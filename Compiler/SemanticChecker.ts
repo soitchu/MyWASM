@@ -1366,7 +1366,7 @@ export class SemanticChecker extends Visitor{
         let curr_type: ast.DataType | undefined = undefined;
 
         // # TODO refactor
-        const isStringCopy = call_expr.fun_name.lexeme === "main_string_append";
+        const isStringCopy = call_expr.fun_name.lexeme === "string_append";
 
         for(let i = 0; i < call_expr.args.length; i++){
             const arg = call_expr.args[i]
