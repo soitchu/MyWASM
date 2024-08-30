@@ -5,86 +5,156 @@ struct String {
   bool pooled;
 }
 
-function String string_ini(String str) {
-  return new String(string_to_array_int(str), length_string(str), null, true);
-}
+function bool string_compare(String str1, String str2) {
+  // array int str1Array = string_to_array_int(str1);
+  // array int str2Array = string_to_array_int(str2);
+  String currentString1 = str1;
+  String currentString2 = str2;
 
-function String string_ini_unpooled(String str) {
-  return new String(string_to_array_int(str), length_string(str), null, false);
-}
+  array int str1Array = str1.value;
+  array int str2Array = str2.value;
+  int str1Counter = 0;
+  int str2Counter = 0;
+  
 
-function void string_append(String string_1, String string_2) {
-  string_2 = string_copy(string_2);
-  String current = string_1;
-  String last_string = null;
+  while((str1Array != null) and (str2Array != null)) {
+    int value1 = str1Array[str1Counter];
+    int value2 = str2Array[str2Counter];
 
-  while(not (current == null)) {
-    last_string = current;
-    current = current.next;
+
+    if(value1 != value2) {
+      return false;
+    }
+
+    str1Counter = str1Counter + 1;
+    str2Counter = str2Counter + 1;
+
+    if(str1Counter >= length(str1Array)) {
+      currentString1 = currentString1.next;
+
+      if(currentString1 != null) {
+        str1Array = currentString1.value;
+        str1Counter = 0;
+      } else {
+        str1Array = null;
+      }
+    }
+
+    if(str2Counter >= length(str2Array)) {
+      currentString2 = currentString2.next;
+
+      if(currentString2 != null) {
+        str2Array = currentString2.value;
+        str2Counter = 0;
+      } else {
+        str2Array = null;
+      }
+    }
   }
 
-  last_string.next = string_2;
+  if((currentString1 == null) and (currentString2 == null)) {
+    return true;
+  }
+
+  return false;
 }
+
+// export function void main() {
+//   string a = "10";
+//   string b = "100";
+
+//   string zero = "0";
+
+//   // string_append(a, zero);
+
+//   delete zero;
+
+//   print(string_compare(a, b));
+//   // int str1Array = a.length;
+
+//   // print(str1Array);
+// }
+
+// function String string_ini(String str) {
+//   return new String(string_to_array_int(str), length_string(str), null, true);
+// }
+
+// function String string_ini_unpooled(String str) {
+//   return new String(string_to_array_int(str), length_string(str), null, false);
+// }
+
+// function void string_append(String string_1, String string_2) {
+//   string_2 = string_copy(string_2);
+//   String current = string_1;
+//   String last_string = null;
+
+//   while(not (current == null)) {
+//     last_string = current;
+//     current = current.next;
+//   }
+
+//   last_string.next = string_2;
+// }
 
 // Double check if deep copy is necessary
-function String string_copy(String str) {
-  if(str == null) {
-    return null;
-  }
+// function String string_copy(String str) {
+//   if(str == null) {
+//     return null;
+//   }
 
-  array int value = str.value;
+//   array int value = str.value;
 
 
-  // If the string isn't pooled, then we need to 
-  // copy the whole string
-  if(not str.pooled) {
-    int len = length(value);
-    value = new int[len];
+//   // If the string isn't pooled, then we need to 
+//   // copy the whole string
+//   if(not str.pooled) {
+//     int len = length(value);
+//     value = new int[len];
 
-    for(int i = 0; i < len; i = i + 1) {
-      value[i] = str.value[i];
-    }
-  }
+//     for(int i = 0; i < len; i = i + 1) {
+//       value[i] = str.value[i];
+//     }
+//   }
 
-  return new String(value, str.length, string_copy(str.next), str.pooled);
-}
+//   return new String(value, str.length, string_copy(str.next), str.pooled);
+// }
 
-function int string_length(String str) {
-  String current = str;
-  int str_length = 0;
+// function int string_length(String str) {
+//   String current = str;
+//   int str_length = 0;
 
-  while(not (current == null)) {
-    str_length = str_length + current.length;
-    current = current.next;
-  }
+//   while(not (current == null)) {
+//     str_length = str_length + current.length;
+//     current = current.next;
+//   }
 
-  return str_length;
-}
+//   return str_length;
+// }
 
-function void string_delete(String str) {
-  String current = str;
+// function void string_delete(String str) {
+//   String current = str;
 
-  while(not (current == null)) {
-    String tmp = current.next;
+//   while(not (current == null)) {
+//     String tmp = current.next;
 
-    if(current.pooled == false) {
-      delete current.value;
-    }
+//     if(current.pooled == false) {
+//       delete current.value;
+//     }
 
-    delete current;
+//     delete current;
 
-    current = tmp;
-  }
-}
+//     current = tmp;
+//   }
+// }
 
 // TODO: This doesn't work with concatenated strings
-function String getw(String str, int index) {
-  array int val = str.value;
-  array int result = new int[1];
+// function String getw(String str, int index) {
+//   array int val = str.value;
+//   array int result = new int[1];
 
-  result[0] = val[index];
-  return string_ini_unpooled(result);
-}
+//   result[0] = val[index];
+//   return string_ini_unpooled(result);
+// }
 
 // function int stoi_(String s) {
 //   String current = s;

@@ -28,7 +28,8 @@ export const BUILT_INS = [
   "random",
   "length_string",
   "string_print",
-  "string_append"
+  "string_append",
+  "string_compare"
 ];
 
 const token_to_op: { [key: number]: string | Object } = {};
@@ -441,8 +442,7 @@ function generatePrintFunctions() {
      end
    )
 
-   local.get $main_main_string_print0_str
-   call $main_string_delete
+
    i32.const 0
    return
  )
@@ -1912,6 +1912,153 @@ export function getWASMCoreFunctions(unsafe = false) {
   return
   i32.const 0
   return
+)
+
+(func $string_compare (param $main_main_string_compare0_str1 i32) (param $main_main_string_compare0_str2 i32) (result i32)
+(local $main_main_string_compare0_currentString1 i32)
+(local $main_main_string_compare0_currentString2 i32)
+(local $main_main_string_compare0_str1Array i32)
+(local $main_main_string_compare0_str2Array i32)
+(local $main_main_string_compare0_str1Counter i32)
+(local $main_main_string_compare0_str2Counter i32)
+(local $main_main_string_compare_while10_value1 i32)
+(local $main_main_string_compare_while10_value2 i32)
+(local $tmp i32)
+
+ local.get $main_main_string_compare0_str1
+ local.set $main_main_string_compare0_currentString1
+
+ local.get $main_main_string_compare0_str2
+ local.set $main_main_string_compare0_currentString2
+
+ local.get $main_main_string_compare0_str1
+ call $check_if_null
+ i32.const 0
+ i32.add
+ i32.load
+ local.set $main_main_string_compare0_str1Array
+
+ local.get $main_main_string_compare0_str2
+ call $check_if_null
+ i32.const 0
+ i32.add
+ i32.load
+ local.set $main_main_string_compare0_str2Array
+
+ i32.const 0
+ local.set $main_main_string_compare0_str1Counter
+
+ i32.const 0
+ local.set $main_main_string_compare0_str2Counter
+
+ (loop $loop1
+   local.get $main_main_string_compare0_str1Array
+   i32.const 0
+   i32.ne
+   local.get $main_main_string_compare0_str2Array
+   i32.const 0
+   i32.ne
+   i32.and
+   if
+     local.get $main_main_string_compare0_str1Counter
+     local.get $main_main_string_compare0_str1Array
+     call $i32_get_array_elem
+     local.set $main_main_string_compare_while10_value1
+     local.get $main_main_string_compare0_str2Counter
+     local.get $main_main_string_compare0_str2Array
+     call $i32_get_array_elem
+     local.set $main_main_string_compare_while10_value2
+     local.get $main_main_string_compare_while10_value1
+     local.get $main_main_string_compare_while10_value2
+     i32.ne
+     if
+       i32.const 0
+       return
+     end
+     local.get $main_main_string_compare0_str1Counter
+     i32.const 1
+     i32.add
+     local.set $main_main_string_compare0_str1Counter
+     local.get $main_main_string_compare0_str2Counter
+     i32.const 1
+     i32.add
+     local.set $main_main_string_compare0_str2Counter
+     local.get $main_main_string_compare0_str1Counter
+     local.get $main_main_string_compare0_str1Array
+     call $length
+     i32.ge_s
+     if
+       local.get $main_main_string_compare0_currentString1
+       call $check_if_null
+       i32.const 8
+       i32.add
+       i32.load
+       local.set $main_main_string_compare0_currentString1
+       local.get $main_main_string_compare0_currentString1
+       i32.const 0
+       i32.ne
+       if
+         local.get $main_main_string_compare0_currentString1
+         call $check_if_null
+         i32.const 0
+         i32.add
+         i32.load
+         local.set $main_main_string_compare0_str1Array
+         i32.const 0
+         local.set $main_main_string_compare0_str1Counter
+       else
+         i32.const 0
+         local.set $main_main_string_compare0_str1Array
+       end
+     end
+     local.get $main_main_string_compare0_str2Counter
+     local.get $main_main_string_compare0_str2Array
+     call $length
+     i32.ge_s
+     if
+       local.get $main_main_string_compare0_currentString2
+       call $check_if_null
+       i32.const 8
+       i32.add
+       i32.load
+       local.set $main_main_string_compare0_currentString2
+       local.get $main_main_string_compare0_currentString2
+       i32.const 0
+       i32.ne
+       if
+         local.get $main_main_string_compare0_currentString2
+         call $check_if_null
+         i32.const 0
+         i32.add
+         i32.load
+         local.set $main_main_string_compare0_str2Array
+         i32.const 0
+         local.set $main_main_string_compare0_str2Counter
+       else
+         i32.const 0
+         local.set $main_main_string_compare0_str2Array
+       end
+     end
+     br $loop1
+   end
+ )
+
+ local.get $main_main_string_compare0_currentString1
+ i32.const 0
+ i32.eq
+ local.get $main_main_string_compare0_currentString2
+ i32.const 0
+ i32.eq
+ i32.and
+ if
+   i32.const 1
+   return
+ end
+
+ i32.const 0
+ return
+ i32.const 0
+ return
 )
   
   (func $delete_struct (param $delete_struct0_struct_pointer i32)

@@ -303,6 +303,21 @@ export class SemanticChecker extends Visitor{
                 ],
                 []
             ),
+            "string_compare": new ast.FunDef(
+                WASM.DATA_TYPES["bool"],
+                ast.Token(ast.TokenType.ID, "string_compare", 0, 0),
+                [
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value", 0, 0)
+                    ),
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value1", 0, 0)
+                    )
+                ],
+                []
+            ),
             "get": new ast.FunDef(
                 WASM.DATA_TYPES["string"],
                 ast.Token(ast.TokenType.ID, "get", 0, 0),

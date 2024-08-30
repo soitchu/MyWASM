@@ -78,13 +78,54 @@ function void handle_whitespaces() {
     read();
 }
 
+function void handle_comments() {
+    // if the next char is also /,
+    // then it is actually a comment
+    peek();
+    // string nextCh = lexeme;
+    string SLASH = "/";
+    string SEMI = ";";
+    string comment = "";
+
+
+    // if (string_compare(SLASH, nextCh)) {
+    //     lexeme = "";
+    //     // // this.token_type = TokenType.COMMENT;
+
+    //     // // remove the next / that's part of 
+    //     // // the comment
+    //     read();
+    //     peek();
+
+    //     // print("---");
+
+    //     // // Since we don't support multiline comments
+    //     // // we should stop when we read a newline or EOF
+    //     // // TODO: add eof back
+    //     // while ((lexeme != null) and (not string_compare(SEMI, lexeme)) and (not isNewLine(lexeme))) {
+    //     //     print(lexeme);
+    //     //     read();
+    //     //     string_append(comment, lexeme);
+    //     // }
+    // }
+
+    // print(comment);
+    delete SLASH;
+    delete SEMI;
+    delete comment;
+    delete lexeme;
+
+}
+
 
 export function int main() {
-    string code = "    int a = 10;";
-    StringBuffer::ini(code);
+    for(int i = 0; i < 100; i = i + 1) {
+        print("----");
+    }
+    // string code = "//    int a = 10;";
+    // StringBuffer::ini(code);
 
-    handle_whitespaces();
-    print(lexeme);
+    // handle_comments();
 
-    StringBuffer::close();
+    // StringBuffer::close();
 }

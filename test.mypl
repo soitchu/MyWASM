@@ -1,9 +1,14 @@
 export function void main() {
-  string a = "1";
-  int b = stoi(a) + 2;
+  string a = "10";
+  string b = "101";
 
-  print(b);
-  print(a);
+  // print(a);
+  bool c = string_compare(a, b);
+  print(c);
 
-
+  // array int aa = new int[10];
+  // aa[0] = 100;
+  // // int b = a[1]
+  // print(length(aa));
+  // print(a[0]);
 }
