@@ -1425,7 +1425,7 @@ export class SemanticChecker extends Visitor{
     }
 
 
-    visit_expr(expr: ast.Expr, last_op: undefined | ast.Token = undefined, copy_string = true){
+    visit_expr(expr: ast.Expr, last_op: undefined | ast.Token = undefined, copy_string = false){
         // # print(expr)
         this.curr_type = undefined;
         let op: string | undefined = undefined;
@@ -1459,7 +1459,7 @@ export class SemanticChecker extends Visitor{
                 )  &&
                 copy_string
             ){
-                this.output_in_new_line("call $main_string_copy")
+                // this.output_in_new_line("call $main_string_copy")
                 // # this.output_in_new_line(str(expr))
             }
             else{
