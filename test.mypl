@@ -1,10 +1,69 @@
-export function void main() {
-  string a = "10";
-  string b = "101";
+// import "test2.mypl" as a;
 
-  // print(a);
-  bool c = string_compare(a, b);
-  print(c);
+export function void main() {
+  // string a = "100";
+  string b = "hello";
+  string d = "world";
+
+  string_append(b, d);
+
+  // for(int i = 0; i < length(b); i = i + 1) {
+  //   string a = get(b, i);
+  //   print(a);
+  //   delete a;
+  // }
+
+  delete d;
+
+  delete b;
+
+  // string c = get(b, 1);
+
+  // print(c);
+  // string b = "";
+  // string c = "no";
+
+  // a::test();
+  // bool a = true;
+  // print(true);
+  // print("ddd");
+
+  // // print(a);
+  // bool c = string_compare(a, b);
+  // print(c);
+
+  // string a = "102";
+  // int b = 2;
+
+  // print(b);
+
+  // delete a;
+  // string d = input();
+
+  // string b = "hello ";
+  // string c = "world";
+  // // double c = stod(b) + 5.4;
+
+  // // print(c);
+
+  // // delete b;
+
+  // string_append(b, c);
+  // string_append(d, c);
+
+  // print(b);
+  // print(d);
+
+  // delete b;
+  // delete c;
+  // delete d;
+
+  // bool a = true;
+  // bool b = false;
+  // print(b);
+
+  // print("true");
+
 
   // array int aa = new int[10];
   // aa[0] = 100;

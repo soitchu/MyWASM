@@ -119,6 +119,7 @@ export class FunDef {
 export class Import {
     file_name: string
     namespace: string
+    isCoreCode: boolean = false
 
     constructor(file_name: string, namespace: string) {
         this.file_name = file_name;

@@ -14,7 +14,6 @@ const UNSTRICT_MODE = false;
 const BASE_TYPES = ['int', 'double', 'bool', 'string'];
 const BOOLEAN_OPS = ["!=", "==", ">", ">=", "<", "<=", "or", "and"];
 const DONT_COPY_STRINGS_FOR = [
-    'delete_string',
     'get_array_pointer',
     'string_to_array_int',
     'get',
@@ -103,6 +102,7 @@ export class SemanticChecker extends Visitor{
     symbol_table = new SymbolTable()
     curr_type: ast.DataType | undefined;
     core_functions = "";
+    inbuiltWAT = "";
     isCoreCode = false;
 
     overloaded_functions = {
@@ -133,13 +133,15 @@ export class SemanticChecker extends Visitor{
         }
     }
 
-    constructor(is_entry_file = true, namespace: string | undefined = undefined, dir_path: string = "") {
+    constructor(is_entry_file = true, namespace: string | undefined = undefined, dir_path: string = "", isCoreCode = false, inbuiltWAT = "") {
         super();
 
         if(namespace !== undefined){
             this.GLOBAL_NAMESPACE = namespace
         }
 
+        this.inbuiltWAT = inbuiltWAT;
+        this.isCoreCode = isCoreCode;
         this.dir_path = dir_path
         this.is_entry_file = is_entry_file
         this.string_was_concated = false
@@ -366,17 +368,6 @@ export class SemanticChecker extends Visitor{
                     new ast.VarDef(
                         WASM.DATA_TYPES["array_int"],
                         ast.Token(ast.TokenType.ID, "arr", 0, 0)
-                    )
-                ],
-                []
-            ),
-            "delete_string": new ast.FunDef(
-                WASM.DATA_TYPES["void"],
-                ast.Token(ast.TokenType.ID, "delete_string", 0, 0),
-                [
-                    new ast.VarDef(
-                        WASM.DATA_TYPES["string"],
-                        ast.Token(ast.TokenType.ID, "str_ptr", 0, 0)
                     )
                 ],
                 []
@@ -958,7 +949,7 @@ export class SemanticChecker extends Visitor{
             
         this.indent -= 1
         
-        if(this.is_entry_file){
+        if(this.is_entry_file && !this.isCoreCode){
             this.output_with_indent(")")
         }
             
@@ -977,11 +968,14 @@ export class SemanticChecker extends Visitor{
         
         // # this.output_in_new_line(this.data_section)
         // # print(this.data_section)
-                
+        if(this.isCoreCode) {
+            return this.main_output;
+        }
+
         if(this.is_entry_file){
             this.core_functions += this.data_section
 
-            return this.core_functions + this.main_output;
+            return this.core_functions + this.inbuiltWAT + this.main_output;
         }
     }
         
@@ -1026,9 +1020,11 @@ export class SemanticChecker extends Visitor{
     }
 
     visit_fun_def(fun_def: ast.FunDef){
-        if(WASM.BUILT_INS.includes(fun_def.fun_name.lexeme)){
+        if(WASM.BUILT_INS.includes(fun_def.fun_name.lexeme) && !this.isCoreCode){
             return
         }
+
+        if(this.isCoreCode && fun_def.stmts.length === 0) return
         
         this.flush()
         
@@ -1423,7 +1419,7 @@ export class SemanticChecker extends Visitor{
         
         if(WASM.getMappedFunctions(function_to_call) === undefined){
             if(function_to_call === "print") {
-                this.output_in_new_line(`call \$${WASM.getPrintFunction(curr_type as ast.DataType)}`)
+                this.output_in_new_line(`call \$${WASM.getPrintFunction(curr_type as ast.DataType, this.isCoreCode)}`)
             }
             else if(function_to_call === "length"){
                 this.output_in_new_line(`call \$${WASM.getLengthFunction(curr_type as ast.DataType)}`)
@@ -1532,6 +1528,8 @@ export class SemanticChecker extends Visitor{
             }
         }
 
+
+        // TODO: remove
         if(last_op !== undefined && first_type !== undefined){
             if (
                 [ast.TokenType.STRING_TYPE, ast.TokenType.STRING_VAL].includes(first_type.type_name.token_type)
