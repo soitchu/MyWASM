@@ -2,8 +2,7 @@
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import * as Compiler from "../Compiler/index.ts";
-import { buildStage } from "../Compiler-WASM/build";
+import * as Native from "../Compiler-WASM/native";
 
 export const ROOT = path.join(__dirname, "..");
 
@@ -11,34 +10,20 @@ export const ROOT = path.join(__dirname, "..");
 // function that removes the temporary files
 export async function compileStage(stage: string) {
   const workDir = mkdtempSync(path.join(tmpdir(), `native-${stage}-`));
-  const source = path.join(workDir, `${stage}.mypl`);
-  const wasm = path.join(workDir, `${stage}.wasm`);
-
-  buildStage(stage, source);
-
-  await Compiler.init(source, wasm, {
-    O: 0,
-    S: 0,
-    fastMath: false,
-    returnBuffer: false,
-    unsafeArray: false,
-  });
+  const { source, wasm } = await Native.compileStage(stage, workDir);
 
   return {
+    source,
     wasm,
     cleanup: () => rmSync(workDir, { recursive: true, force: true }),
   };
 }
 
 // Runs a compiled stage with stdin as its input. Native errors print a
-// message starting with errorPrefix and then trap; any other failure throws
+// message starting with one of errorPrefixes and then trap; any other
+// failure throws
 export function runStage(wasm: string, stdin: string, errorPrefixes: string[]) {
-  const result = Bun.spawnSync({
-    cmd: [process.execPath, path.join(ROOT, "index.ts"), "run", "--memory", "256M", wasm],
-    stdin: Buffer.from(stdin),
-    timeout: 60_000,
-  });
-
+  const result = Native.runStage(wasm, stdin);
   const stdout = result.stdout.toString();
 
   if (result.exitCode !== 0 && !errorPrefixes.some((prefix) => stdout.includes(prefix))) {

@@ -134,9 +134,18 @@ int count_else = 0;
 ParserSymbolTable parser_symbols = null;
 
 function void parser_init(Text source, string namespace, bool transform_names) {
+  parser_init_text(source, text_from_string(namespace), transform_names);
+}
+
+function void parser_init_text(Text source, Text namespace, bool transform_names) {
   lexer_init(source);
   curr_token = null;
-  global_namespace = text_from_string(namespace);
+  global_namespace = text_copy(namespace);
+  count_if = 0;
+  count_for = 0;
+  count_while = 0;
+  count_elseif = 0;
+  count_else = 0;
   should_transform_name = transform_names;
   name_prefix = text_list_new();
   text_list_push(name_prefix, text_copy(global_namespace));

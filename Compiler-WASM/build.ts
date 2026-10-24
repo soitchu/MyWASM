@@ -19,6 +19,19 @@ export const STAGES: Record<string, string[]> = {
     "AstDump.mypl",
     "drivers/parse.mypl",
   ],
+  compile: [
+    "Text.mypl",
+    "Token.mypl",
+    "Lexer.mypl",
+    "Ast.mypl",
+    "Parser.mypl",
+    "Map.mypl",
+    "Path.mypl",
+    "Checker.mypl",
+    "CoreWat.mypl",
+    "Builtins.mypl",
+    "drivers/compile.mypl",
+  ],
 };
 
 export function buildStage(stage: string, output: string) {

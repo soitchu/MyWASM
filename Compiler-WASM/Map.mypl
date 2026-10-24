@@ -1,0 +1,203 @@
+// An ordered map from Text keys to values, used like the plain objects the
+// TS compiler uses as maps. Each entry has a slot per value type, and only
+// the one the map is used for is set. Setting an existing key keeps its
+// position, like a JS object, since iteration order decides output order
+
+struct MapEntry {
+  Text key;
+  StructDef struct_def;
+  FunDef fun_def;
+  DataType data_type;
+  int number;
+}
+
+struct Map {
+  array MapEntry items;
+  int length;
+}
+
+function Map map_new() {
+  return new Map(new MapEntry[8], 0);
+}
+
+function MapEntry map_find(Map map, Text key) {
+  for (int i = 0; i < map.length; i = i + 1) {
+    if (text_equals(map.items[i].key, key)) {
+      return map.items[i];
+    }
+  }
+
+  return null;
+}
+
+function bool map_has(Map map, Text key) {
+  return map_find(map, key) != null;
+}
+
+// Returns the entry for key, adding an empty one at the end if needed
+function MapEntry map_entry(Map map, Text key) {
+  MapEntry entry = map_find(map, key);
+
+  if (entry != null) {
+    return entry;
+  }
+
+  if (map.length == length(map.items)) {
+    array MapEntry old_items = map.items;
+    array MapEntry new_items = new MapEntry[length(old_items) * 2];
+
+    for (int i = 0; i < map.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    map.items = new_items;
+    delete old_items;
+  }
+
+  entry = new MapEntry(text_copy(key), null, null, null, 0);
+  map.items[map.length] = entry;
+  map.length = map.length + 1;
+
+  return entry;
+}
+
+function void map_set_struct(Map map, Text key, StructDef value) {
+  MapEntry entry = map_entry(map, key);
+  entry.struct_def = value;
+}
+
+function void map_set_fun(Map map, Text key, FunDef value) {
+  MapEntry entry = map_entry(map, key);
+  entry.fun_def = value;
+}
+
+function void map_set_data_type(Map map, Text key, DataType value) {
+  MapEntry entry = map_entry(map, key);
+  entry.data_type = value;
+}
+
+function void map_set_number(Map map, Text key, int value) {
+  MapEntry entry = map_entry(map, key);
+  entry.number = value;
+}
+
+function StructDef map_get_struct(Map map, Text key) {
+  MapEntry entry = map_find(map, key);
+
+  if (entry == null) {
+    return null;
+  }
+
+  return entry.struct_def;
+}
+
+function FunDef map_get_fun(Map map, Text key) {
+  MapEntry entry = map_find(map, key);
+
+  if (entry == null) {
+    return null;
+  }
+
+  return entry.fun_def;
+}
+
+function DataType map_get_data_type(Map map, Text key) {
+  MapEntry entry = map_find(map, key);
+
+  if (entry == null) {
+    return null;
+  }
+
+  return entry.data_type;
+}
+
+//----------------------------------------------------------------------
+// Symbol table, a stack of maps from names to DataTypes (SymbolTable.ts)
+//----------------------------------------------------------------------
+
+struct SymbolTable {
+  array Map environments;
+  int length;
+}
+
+function SymbolTable symbol_table_new() {
+  return new SymbolTable(new Map[8], 0);
+}
+
+function void push_environment(SymbolTable table) {
+  if (table.length == length(table.environments)) {
+    array Map old_envs = table.environments;
+    array Map new_envs = new Map[length(old_envs) * 2];
+
+    for (int i = 0; i < table.length; i = i + 1) {
+      new_envs[i] = old_envs[i];
+    }
+
+    table.environments = new_envs;
+    delete old_envs;
+  }
+
+  table.environments[table.length] = map_new();
+  table.length = table.length + 1;
+}
+
+function void pop_environment(SymbolTable table) {
+  if (table.length > 0) {
+    table.length = table.length - 1;
+  }
+}
+
+function void symbol_add(SymbolTable table, Text name, DataType info) {
+  if (table.length > 0) {
+    map_set_data_type(table.environments[table.length - 1], name, info);
+  }
+}
+
+function bool exists_in_curr_env(SymbolTable table, Text name) {
+  if (table.length == 0) {
+    return false;
+  }
+
+  return map_has(table.environments[table.length - 1], name);
+}
+
+function bool exists_in_global_env(SymbolTable table, Text name) {
+  if (table.length == 0) {
+    return false;
+  }
+
+  return map_has(table.environments[0], name);
+}
+
+// How many environments from the innermost one the name is bound in,
+// starting at 1, or -1 if it isn't bound
+function int index_of_binded_env(SymbolTable table, Text name) {
+  for (int i = 1; i <= table.length; i = i + 1) {
+    if (map_has(table.environments[table.length - i], name)) {
+      return i;
+    }
+  }
+
+  return 0 - 1;
+}
+
+// "global" when the name is bound in the outermost environment
+function string get_var_prefix(SymbolTable table, Text name) {
+  if (index_of_binded_env(table, name) == table.length) {
+    return "global";
+  }
+
+  return "local";
+}
+
+function DataType symbol_get(SymbolTable table, Text name) {
+  for (int i = 1; i <= table.length; i = i + 1) {
+    MapEntry entry = map_find(table.environments[table.length - i], name);
+
+    if (entry != null) {
+      return entry.data_type;
+    }
+  }
+
+  return null;
+}

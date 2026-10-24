@@ -1,0 +1,83 @@
+// POSIX path.join, as Node does it, for resolving imports
+
+// Normalizes a path: removes empty and "." segments and resolves "..",
+// keeping a leading and a trailing slash
+function Text path_normalize(Text path) {
+  if (path.length == 0) {
+    return text_from_string(".");
+  }
+
+  // 47 is a slash
+  bool is_absolute = path.chars[0] == 47;
+  bool has_trailing_slash = path.chars[path.length - 1] == 47;
+  TextList segments = text_list_new();
+  Text segment = text_new();
+
+  for (int i = 0; i <= path.length; i = i + 1) {
+    bool at_end = i == path.length;
+    bool at_slash = false;
+
+    if (not at_end) {
+      at_slash = path.chars[i] == 47;
+    }
+
+    if (at_end or at_slash) {
+      if (text_equals_string(segment, "..")) {
+        bool can_pop = false;
+
+        if (segments.length > 0) {
+          can_pop = not text_equals_string(segments.items[segments.length - 1], "..");
+        }
+
+        if (can_pop) {
+          text_list_pop(segments);
+        } elseif (not is_absolute) {
+          text_list_push(segments, segment);
+        }
+      } elseif ((segment.length > 0) and (not text_equals_string(segment, "."))) {
+        text_list_push(segments, segment);
+      }
+
+      segment = text_new();
+    } else {
+      text_push(segment, path.chars[i]);
+    }
+  }
+
+  Text result = text_list_join(segments, "/");
+
+  if ((result.length == 0) and (not is_absolute)) {
+    text_append_string(result, ".");
+  }
+
+  if ((result.length > 0) and has_trailing_slash) {
+    text_append_string(result, "/");
+  }
+
+  if (is_absolute) {
+    Text absolute = text_from_string("/");
+    text_append(absolute, result);
+    return absolute;
+  }
+
+  return result;
+}
+
+function Text path_join(Text a, Text b) {
+  Text joined = text_copy(a);
+
+  if ((a.length > 0) and (b.length > 0)) {
+    text_append_string(joined, "/");
+  }
+
+  text_append(joined, b);
+
+  return path_normalize(joined);
+}
+
+function Text path_join_string(Text a, string b) {
+  Text b_text = text_from_string(b);
+  Text joined = path_join(a, b_text);
+  text_delete(b_text);
+  return joined;
+}

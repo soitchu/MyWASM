@@ -1,0 +1,1906 @@
+// Port of Compiler/SemanticChecker.ts, which checks the AST and generates
+// WAT at the same time, and the helpers it uses from WasmHelper.ts.
+// Imports and the built-in functions are compiled by separate checkers, so
+// the checker's state is a struct that every function takes
+
+//----------------------------------------------------------------------
+// Types
+//----------------------------------------------------------------------
+
+struct DataTypeList {
+  array DataType items;
+  int length;
+}
+
+function DataTypeList data_type_list_new() {
+  return new DataTypeList(new DataType[4], 0);
+}
+
+function void data_type_list_push(DataTypeList list, DataType item) {
+  if (list.length == length(list.items)) {
+    array DataType old_items = list.items;
+    array DataType new_items = new DataType[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+// DATA_TYPES in WasmHelper.ts. Some are compared by identity, like there
+DataType DT_VOID = null;
+DataType DT_STRING = null;
+DataType DT_INT = null;
+DataType DT_DOUBLE = null;
+DataType DT_BOOL = null;
+DataType DT_ARRAY_INT = null;
+DataType DT_ANY_ARRAY = null;
+DataType DT_ANY_STRUCT = null;
+
+function Token make_token(int type, string lexeme, int line, int column) {
+  return token_new(type, text_from_string(lexeme), line, column);
+}
+
+function DataType make_data_type(bool is_array, int type, string lexeme) {
+  return new DataType(is_array, make_token(type, lexeme, 0, 0), null);
+}
+
+function void data_types_init() {
+  DT_VOID = make_data_type(false, TT_VOID_TYPE, "void");
+  DT_STRING = make_data_type(false, TT_STRING_TYPE, "string");
+  DT_INT = make_data_type(false, TT_INT_TYPE, "int");
+  DT_DOUBLE = make_data_type(false, TT_DOUBLE_TYPE, "double");
+  DT_BOOL = make_data_type(false, TT_BOOL_TYPE, "bool");
+  DT_ARRAY_INT = make_data_type(true, TT_INT_TYPE, "int");
+  DT_ANY_ARRAY = make_data_type(true, TT_ID, "any");
+  DT_ANY_STRUCT = make_data_type(true, TT_ID, "any_struct");
+}
+
+function void builtin_param(VarDefList params, DataType data_type, string name) {
+  var_def_list_push(params, new VarDef(data_type, make_token(TT_ID, name, 0, 0)));
+}
+
+function FunDef builtin_fun_def(DataType return_type, string name, VarDefList params) {
+  return new FunDef(return_type, make_token(TT_ID, name, 0, 0), params, stmt_list_new(), null, false);
+}
+
+function bool is_base_type_name(Text name) {
+  return text_equals_string(name, "int") or text_equals_string(name, "double") or
+    text_equals_string(name, "bool") or text_equals_string(name, "string");
+}
+
+function bool is_boolean_op(Text op) {
+  return text_equals_string(op, "!=") or text_equals_string(op, "==") or
+    text_equals_string(op, ">") or text_equals_string(op, ">=") or
+    text_equals_string(op, "<") or text_equals_string(op, "<=") or
+    text_equals_string(op, "or") or text_equals_string(op, "and");
+}
+
+function bool is_string_type(int token_type) {
+  return (token_type == TT_STRING_TYPE) or (token_type == TT_STRING_VAL);
+}
+
+//----------------------------------------------------------------------
+// WasmHelper.ts
+//----------------------------------------------------------------------
+
+function void fatal_error(string message) {
+  print("Error: ");
+  print(message);
+  print("\n");
+  error("");
+}
+
+function string get_wasm_type(Token type_name, bool is_array) {
+  if (is_array) {
+    return "i32";
+  }
+
+  int t = type_name.type;
+
+  if ((t == TT_ID) or (t == TT_VOID_TYPE) or (t == TT_NULL_VAL) or (t == TT_STRING_TYPE) or (t == TT_STRING_VAL)) {
+    return "i32";
+  }
+
+  if ((t == TT_DOUBLE_TYPE) or (t == TT_DOUBLE_VAL)) {
+    return "f64";
+  }
+
+  if (text_equals_string(type_name.lexeme, "int") or text_equals_string(type_name.lexeme, "bool") or (t == TT_INT_VAL) or (t == TT_BOOL_VAL)) {
+    return "i32";
+  }
+
+  fatal_error("Type not recognized");
+  return "";
+}
+
+// Doesn't look at is_array, so an array of doubles counts as 8 bytes, like
+// in the TS compiler
+function int get_wasm_size(DataType data_type) {
+  int t = data_type.type_name.type;
+
+  if ((t == TT_INT_TYPE) or (t == TT_INT_VAL) or (t == TT_ID) or (t == TT_STRING_TYPE) or
+    (t == TT_STRING_VAL) or (t == TT_BOOL_TYPE) or (t == TT_BOOL_VAL)) {
+    return 4;
+  }
+
+  if ((t == TT_DOUBLE_TYPE) or (t == TT_DOUBLE_VAL)) {
+    return 8;
+  }
+
+  fatal_error("Type not found");
+  return 0;
+}
+
+function Text get_wasm_value(Token type_name) {
+  if (text_equals_string(type_name.lexeme, "null")) {
+    return text_from_string("0");
+  }
+
+  if (type_name.type == TT_BOOL_VAL) {
+    if (text_equals_string(type_name.lexeme, "true")) {
+      return text_from_string("1");
+    }
+
+    return text_from_string("0");
+  }
+
+  return text_copy(type_name.lexeme);
+}
+
+// token_to_op in WasmHelper.ts. Mod has no f64 version, which comes out as
+// "undefined" like in the TS compiler
+function string get_wasm_op(Token op, Token type_name) {
+  int t = op.type;
+  int type = type_name.type;
+  bool is_i32 = not ((type == TT_DOUBLE_TYPE) or (type == TT_DOUBLE_VAL));
+
+  // get_wasm_type errors for types it doesn't recognize
+  get_wasm_type(type_name, false);
+
+  if (t == TT_PLUS) { return ".add"; }
+  if (t == TT_MINUS) { return ".sub"; }
+  if (t == TT_TIMES) { return ".mul"; }
+  if (t == TT_EQUAL) { return ".eq"; }
+  if (t == TT_AND) { return ".and"; }
+  if (t == TT_NOT_EQUAL) { return ".ne"; }
+  if (t == TT_OR) { return ".or"; }
+
+  if (t == TT_DIVIDE) {
+    if (is_i32) { return ".div_s"; }
+    return ".div";
+  }
+
+  if (t == TT_LESS_EQ) {
+    if (is_i32) { return ".le_s"; }
+    return ".le";
+  }
+
+  if (t == TT_LESS) {
+    if (is_i32) { return ".lt_s"; }
+    return ".lt";
+  }
+
+  if (t == TT_GREATER_EQ) {
+    if (is_i32) { return ".ge_s"; }
+    return ".ge";
+  }
+
+  if (t == TT_GREATER) {
+    if (is_i32) { return ".gt_s"; }
+    return ".gt";
+  }
+
+  // MOD
+  if (is_i32) { return ".rem_s"; }
+  return "undefined";
+}
+
+function bool is_mapped_function(Text name) {
+  return text_equals_string(name, "mem_copy") or text_equals_string(name, "i32_load") or
+    text_equals_string(name, "i32_store");
+}
+
+function string get_mapped_function(Text name) {
+  if (text_equals_string(name, "mem_copy")) { return "memory.copy"; }
+  if (text_equals_string(name, "i32_load")) { return "i32.load"; }
+  return "i32.store";
+}
+
+// Returns "undefined" for types that can't be printed, like the TS compiler
+function string get_print_function(DataType data_type, bool is_core_code) {
+  int t = data_type.type_name.type;
+
+  if (is_core_code) { return "print"; }
+  if (data_type.is_array) { return "print_int"; }
+  if ((t == TT_BOOL_TYPE) or (t == TT_BOOL_VAL)) { return "print_bool"; }
+  if ((t == TT_INT_TYPE) or (t == TT_INT_VAL)) { return "print_int"; }
+  if ((t == TT_DOUBLE_TYPE) or (t == TT_DOUBLE_VAL)) { return "print_double"; }
+  if (is_string_type(t)) { return "string_print"; }
+
+  return "undefined";
+}
+
+function string get_length_function(DataType data_type) {
+  if (data_type.is_array) {
+    return "length";
+  }
+
+  if (is_string_type(data_type.type_name.type)) {
+    return "main_string_length";
+  }
+
+  return "length";
+}
+
+// Writes the number as 4 little-endian bytes, like "\2a\00\00\00"
+function void append_little_endian_hex(Text text, int value) {
+  for (int i = 0; i < 4; i = i + 1) {
+    int byte = value % 256;
+    value = value / 256;
+
+    // 92 is a backslash
+    text_push(text, 92);
+    text_push(text, hex_digit(byte / 16));
+    text_push(text, hex_digit(byte % 16));
+  }
+}
+
+function int hex_digit(int value) {
+  if (value < 10) {
+    return 48 + value;
+  }
+
+  // a-f
+  return 87 + value;
+}
+
+//----------------------------------------------------------------------
+// Source files, for imports. The driver reads them from stdin
+//----------------------------------------------------------------------
+
+struct SourceFile {
+  Text path;
+  Text source;
+}
+
+struct SourceFileList {
+  array SourceFile items;
+  int length;
+}
+
+SourceFileList source_files = null;
+
+function void source_files_add(Text path, Text source) {
+  if (source_files == null) {
+    source_files = new SourceFileList(new SourceFile[8], 0);
+  }
+
+  if (source_files.length == length(source_files.items)) {
+    array SourceFile old_items = source_files.items;
+    array SourceFile new_items = new SourceFile[length(old_items) * 2];
+
+    for (int i = 0; i < source_files.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    source_files.items = new_items;
+    delete old_items;
+  }
+
+  source_files.items[source_files.length] = new SourceFile(path, source);
+  source_files.length = source_files.length + 1;
+}
+
+function Text read_source_file(Text path) {
+  if (source_files != null) {
+    for (int i = 0; i < source_files.length; i = i + 1) {
+      if (text_equals(source_files.items[i].path, path)) {
+        return source_files.items[i].source;
+      }
+    }
+  }
+
+  print("Error: ENOENT: no such file or directory, open '");
+  text_print(path);
+  print("'\n");
+  error("");
+  return null;
+}
+
+//----------------------------------------------------------------------
+// Checker state
+//----------------------------------------------------------------------
+
+struct Checker {
+  int indent;
+  Text buffer;
+  Text main_output;
+  Text global_namespace;
+  int global_offset;
+  Text dir_path;
+  bool is_entry_file;
+  Map structs;
+  DataType current_return_type;
+  Map functions;
+  TextList namespaces;
+  Text data_section;
+  Map string_map;
+  VarDefList declared_variables;
+  int loop_count;
+  SymbolTable symbol_table;
+  DataType curr_type;
+  Text core_functions;
+  Text inbuilt_wat;
+  bool is_core_code;
+}
+
+function Checker checker_new(bool is_entry_file, Text namespace, Text dir_path, bool is_core_code, Text inbuilt_wat) {
+  Text global_namespace = namespace;
+
+  if (global_namespace == null) {
+    global_namespace = text_from_string("main");
+  }
+
+  Checker c = new Checker(
+    0,
+    text_new(),
+    text_new(),
+    global_namespace,
+    8,
+    dir_path,
+    is_entry_file,
+    map_new(),
+    null,
+    map_new(),
+    text_list_new(),
+    text_new(),
+    map_new(),
+    var_def_list_new(),
+    0,
+    symbol_table_new(),
+    null,
+    text_new(),
+    inbuilt_wat,
+    is_core_code
+  );
+
+  register_builtins(c);
+
+  return c;
+}
+
+//----------------------------------------------------------------------
+// Helper functions
+//----------------------------------------------------------------------
+
+function void output(Checker c, string msg) {
+  text_append_string(c.buffer, msg);
+}
+
+// String literals can't contain a newline ("\n" is a backslash and an n),
+// so newlines are pushed as character code 10
+function void output_eol(Checker c) {
+  text_push(c.buffer, 10);
+}
+
+function void output_text(Checker c, Text msg) {
+  text_append(c.buffer, msg);
+}
+
+function void output_int(Checker c, int value) {
+  string str = itos(value);
+  text_append_string(c.buffer, str);
+  delete str;
+}
+
+function void output_indent(Checker c) {
+  for (int i = 0; i < c.indent; i = i + 1) {
+    text_append_string(c.buffer, "  ");
+  }
+}
+
+function void output_with_indent(Checker c, string msg) {
+  output_indent(c);
+  output(c, msg);
+}
+
+// Starts a new line, like output_in_new_line before its message
+function void output_new_line(Checker c) {
+  output_eol(c);
+  output_indent(c);
+}
+
+function void output_in_new_line(Checker c, string msg) {
+  output_new_line(c);
+  output(c, msg);
+}
+
+function void flush(Checker c) {
+  text_append(c.main_output, c.buffer);
+  c.buffer = text_new();
+}
+
+function Text discard(Checker c) {
+  Text tmp_buffer = c.buffer;
+  c.buffer = text_new();
+  return tmp_buffer;
+}
+
+// The built-in functions are compiled with every check bypassed, so in
+// core code errors are ignored and checking continues
+function void checker_error(Checker c, Text message, Token token) {
+  if (not c.is_core_code) {
+    if (token == null) {
+      print("Error: ");
+    } else {
+      print("Semantic error (line ");
+      print(token.line);
+      print(", column ");
+      print(token.column);
+      print("): ");
+    }
+
+    text_print(message);
+    print("\n");
+    error("");
+  }
+}
+
+function void checker_error_string(Checker c, string message, Token token) {
+  checker_error(c, text_from_string(message), token);
+}
+
+// Appends "text" to a message, with the double quotes
+function void append_quoted(Text message, Text text) {
+  text_push(message, 34);
+  text_append(message, text);
+  text_push(message, 34);
+}
+
+function void append_int(Text message, int value) {
+  string str = itos(value);
+  text_append_string(message, str);
+  delete str;
+}
+
+// Checks whether expected is equal to actual. When strict_mode is false,
+// any type is equal to void AND vice versa
+function bool match_type(DataType expected, DataType actual, bool strict_mode) {
+  Text expected_name = expected.type_name.lexeme;
+  Text actual_name = actual.type_name.lexeme;
+
+  // This basically ensures that "null" can go into any type, but also makes
+  // sure that a non-null data type can't be assigned to void
+  return ((expected.is_array == actual.is_array) and text_equals(expected_name, actual_name)) or
+    text_equals_string(actual_name, "void") or
+    ((not strict_mode) and text_equals_string(expected_name, "void"));
+}
+
+// Returns true if actual matches at least one of the expected types. Used
+// for overloaded built-in functions
+function bool match_any_type(Checker c, DataTypeList expected_types, DataType actual) {
+  for (int i = 0; i < expected_types.length; i = i + 1) {
+    DataType expected = expected_types.items[i];
+
+    // Any type of arrays are fine when the data type is ANY_ARRAY
+    if ((expected == DT_ANY_ARRAY) and actual.is_array) {
+      return true;
+    }
+
+    if (map_has(c.structs, actual.type_name.lexeme) and (not actual.is_array) and (expected == DT_ANY_STRUCT)) {
+      return true;
+    }
+
+    if (match_type(expected, actual, true)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function bool is_boolean(DataType t) {
+  if (t == null) {
+    return false;
+  }
+
+  return ((t.type_name.type == TT_BOOL_TYPE) or (t.type_name.type == TT_BOOL_VAL)) and (not t.is_array);
+}
+
+function DataType get_field_type(StructDef struct_def, Text field_name) {
+  for (int i = 0; i < struct_def.fields.length; i = i + 1) {
+    VarDef var_def = struct_def.fields.items[i];
+
+    if (text_equals(var_def.var_name.lexeme, field_name)) {
+      return var_def.data_type;
+    }
+  }
+
+  return null;
+}
+
+function int get_field_cummulative_size(StructDef struct_def, Text field_name) {
+  int total_size = 0;
+
+  for (int i = 0; i < struct_def.fields.length; i = i + 1) {
+    VarDef var_def = struct_def.fields.items[i];
+
+    if (text_equals(var_def.var_name.lexeme, field_name)) {
+      return total_size;
+    }
+
+    total_size = total_size + get_wasm_size(var_def.data_type);
+  }
+
+  return 0;
+}
+
+function int get_struct_total_size(StructDef struct_def) {
+  int total_size = 0;
+
+  for (int i = 0; i < struct_def.fields.length; i = i + 1) {
+    total_size = total_size + get_wasm_size(struct_def.fields.items[i].data_type);
+  }
+
+  return total_size;
+}
+
+function Text type_to_string(DataType data_type) {
+  Text result = text_new();
+
+  if (data_type.is_array) {
+    text_append_string(result, "array ");
+  }
+
+  text_append(result, data_type.type_name.lexeme);
+  return result;
+}
+
+// Returns the first token of an expression, for errors
+function Token get_first_rvalue_token(Expr e) {
+  ExprTerm first = e.first;
+
+  if (first.kind == TERM_COMPLEX) {
+    return get_first_rvalue_token(first.expr);
+  }
+
+  RValue rvalue = first.rvalue;
+
+  if (rvalue.kind == RV_CALL) {
+    return rvalue.call_expr.fun_name;
+  } elseif (rvalue.kind == RV_NEW) {
+    return rvalue.new_rvalue.type_name;
+  } elseif (rvalue.kind == RV_VAR) {
+    return rvalue.var_rvalue.path.items[0].var_name;
+  }
+
+  return rvalue.value;
+}
+
+// Makes sure curr_type is set, and returns it
+function DataType get_curr_token(Checker c, int error_code, Token error_token) {
+  if (c.curr_type == null) {
+    Text message = text_from_string("(");
+    append_int(message, error_code);
+    text_append_string(message, ") Unexpected error. curr_type was undefined");
+    checker_error(c, message, error_token);
+  }
+
+  return c.curr_type;
+}
+
+function bool is_symbol_a_var(Checker c, Text name) {
+  return not (map_has(c.functions, name) or map_has(c.structs, name));
+}
+
+function bool text_list_contains(TextList list, Text text) {
+  for (int i = 0; i < list.length; i = i + 1) {
+    if (text_equals(list.items[i], text)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Prefixes the token's lexeme with namespace + "_"
+function void prefix_lexeme(Token token, Token namespace) {
+  Text lexeme = text_copy(namespace.lexeme);
+  text_append_string(lexeme, "_");
+  text_append(lexeme, token.lexeme);
+  set_lexeme(token, lexeme);
+}
+
+//----------------------------------------------------------------------
+// Visitor functions
+//----------------------------------------------------------------------
+
+function void visit_stmt(Checker c, Stmt s) {
+  if (s.kind == STMT_VAR_DECL) {
+    visit_var_decl(c, s.var_decl);
+  } elseif (s.kind == STMT_ASSIGN) {
+    visit_assign_stmt(c, s.assign_stmt);
+  } elseif (s.kind == STMT_RETURN) {
+    visit_return_stmt(c, s.expr);
+  } elseif (s.kind == STMT_WHILE) {
+    visit_while_stmt(c, s.while_stmt);
+  } elseif (s.kind == STMT_FOR) {
+    visit_for_stmt(c, s.for_stmt);
+  } elseif (s.kind == STMT_IF) {
+    visit_if_stmt(c, s.if_stmt);
+  } elseif (s.kind == STMT_DELETE) {
+    visit_delete_stmt(c, s.delete_target);
+  } else {
+    visit_call_expr(c, s.call_expr);
+  }
+}
+
+function void visit_term(Checker c, ExprTerm term) {
+  if (term.kind == TERM_COMPLEX) {
+    visit_expr(c, term.expr, null);
+  } else {
+    visit_rvalue(c, term.rvalue);
+  }
+}
+
+function void visit_rvalue(Checker c, RValue rvalue) {
+  if (rvalue.kind == RV_SIMPLE) {
+    visit_simple_rvalue(c, rvalue.value);
+  } elseif (rvalue.kind == RV_NEW) {
+    visit_new_rvalue(c, rvalue.new_rvalue);
+  } elseif (rvalue.kind == RV_VAR) {
+    visit_var_rvalue(c, rvalue.var_rvalue.path, false);
+  } else {
+    visit_call_expr(c, rvalue.call_expr);
+  }
+}
+
+function void visit_delete_stmt(Checker c, VarRValue var_rvalue) {
+  visit_var_rvalue(c, var_rvalue.path, false);
+
+  Token var_name = var_rvalue.path.items[0].var_name;
+  DataType var_type = get_curr_token(c, 62, var_name);
+  int token_type = var_type.type_name.type;
+
+  if (token_type == TT_ID) {
+    // TODO make sure the struct exists
+    output_in_new_line(c, "call $delete_struct");
+  } elseif (var_type.is_array) {
+    if ((token_type == TT_DOUBLE_TYPE) or (token_type == TT_DOUBLE_VAL)) {
+      output_in_new_line(c, "call $delete_f64_array");
+    } else {
+      output_in_new_line(c, "call $delete_i32_array");
+    }
+  } elseif (is_string_type(token_type)) {
+    output_in_new_line(c, "call $main_string_delete");
+  } else {
+    Text message = text_from_string("(63) Cannot delete ");
+    text_append(message, var_type.type_name.lexeme);
+    checker_error(c, message, var_name);
+  }
+}
+
+// Entry visiting point. Returns the WAT for an entry file or core code, and
+// null for an imported file
+function Text visit_program(Checker c, Program program, bool unsafe_array) {
+  // check and record struct defs
+  c.core_functions = text_new();
+
+  if (c.is_entry_file) {
+    text_append_string(c.core_functions, "(module");
+    c.indent = c.indent + 1;
+
+    text_append_string(c.core_functions, "(import ");
+    text_push(c.core_functions, 34);
+    text_append_string(c.core_functions, "env");
+    text_push(c.core_functions, 34);
+    text_append_string(c.core_functions, " ");
+    text_push(c.core_functions, 34);
+    text_append_string(c.core_functions, "memory");
+    text_push(c.core_functions, 34);
+    text_append_string(c.core_functions, " (memory $0 1))");
+    append_core_wat(c.core_functions, unsafe_array);
+
+    // The TS checker adds "offset" and "mem" here, before there's an
+    // environment to add them to, so they're never added
+  }
+
+  for (int i = 0; i < program.struct_defs.length; i = i + 1) {
+    StructDef struct_def = program.struct_defs.items[i];
+    Text struct_name = struct_def.struct_name.lexeme;
+
+    if (map_has(c.structs, struct_name)) {
+      Text message = text_from_string("(1) Duplicate ");
+      text_append(message, struct_name);
+      text_append_string(message, " definition");
+      checker_error(c, message, struct_def.struct_name);
+    }
+
+    map_set_struct(c.structs, struct_name, struct_def);
+
+    for (int j = 0; j < struct_def.fields.length; j = j + 1) {
+      DataType data_type = struct_def.fields.items[j].data_type;
+
+      if (data_type.namespace != null) {
+        prefix_lexeme(data_type.type_name, data_type.namespace);
+
+        // TODO this seems janky
+        data_type.namespace = null;
+      }
+    }
+  }
+
+  // check and record function defs
+  for (int i = 0; i < program.fun_defs.length; i = i + 1) {
+    FunDef fun = program.fun_defs.items[i];
+    Text fun_name = fun.fun_name.lexeme;
+
+    if (map_has(c.functions, fun_name)) {
+      Text message = text_from_string("(2) Duplicate function ");
+      append_quoted(message, fun_name);
+      text_append_string(message, "'s definition");
+      checker_error(c, message, fun.fun_name);
+    }
+
+    map_set_fun(c.functions, fun_name, fun);
+
+    // Export functions only when they are in the main file
+    if (c.is_entry_file and fun.should_export) {
+      Text name = text_copy(fun.fun_name.lexeme);
+
+      if (fun.return_type.namespace != null) {
+        name = text_copy(fun.return_type.namespace.lexeme);
+        text_append_string(name, "_");
+        text_append(name, fun.fun_name.lexeme);
+      }
+
+      text_append_string(c.core_functions, "(export ");
+      append_quoted(c.core_functions, fun.original_name);
+      text_append_string(c.core_functions, " (func $");
+      text_append(c.core_functions, name);
+      text_append_string(c.core_functions, "))");
+      text_push(c.core_functions, 10);
+    }
+
+    if (fun.return_type.namespace != null) {
+      prefix_lexeme(fun.return_type.type_name, fun.return_type.namespace);
+      fun.return_type.namespace = null;
+    }
+  }
+
+  push_environment(c.symbol_table);
+
+  for (int i = 0; i < program.imports.length; i = i + 1) {
+    visit_import(c, program, program.imports.items[i]);
+  }
+
+  for (int i = 0; i < program.vdecl_stmts.length; i = i + 1) {
+    VarDecl stmt = program.vdecl_stmts.items[i];
+
+    flush(c);
+    visit_var_decl(c, stmt);
+
+    // Discarding to make sure it doesn't print
+    discard(c);
+
+    // Handling the special case of global variables
+    DataType data_type = stmt.var_def.data_type;
+    string wasm_type = get_wasm_type(data_type.type_name, data_type.is_array);
+
+    // This is always defined since that's how the parser was programmed
+    if (stmt.expr == null) {
+      checker_error_string(c, "(54) Global variable's expr was undefined", stmt.var_def.var_name);
+    }
+
+    Token var_value = stmt.expr.first.rvalue.value;
+
+    text_append_string(c.core_functions, "(global $");
+    text_append(c.core_functions, stmt.var_def.var_name.lexeme);
+    text_append_string(c.core_functions, " (mut ");
+    text_append_string(c.core_functions, wasm_type);
+    text_append_string(c.core_functions, ") (");
+    text_append_string(c.core_functions, wasm_type);
+    text_append_string(c.core_functions, ".const ");
+    text_append(c.core_functions, get_wasm_value(var_value));
+    text_append_string(c.core_functions, "))");
+  }
+
+  output_eol(c);
+  output_eol(c);
+
+  // check each struct
+  for (int i = 0; i < c.structs.length; i = i + 1) {
+    visit_struct_def(c, c.structs.items[i].struct_def);
+  }
+
+  // check each function
+  for (int i = 0; i < c.functions.length; i = i + 1) {
+    visit_fun_def(c, c.functions.items[i].fun_def);
+  }
+
+  c.indent = c.indent - 1;
+
+  if (c.is_entry_file and (not c.is_core_code)) {
+    output_with_indent(c, ")");
+  }
+
+  pop_environment(c.symbol_table);
+
+  if (c.symbol_table.length != 0) {
+    checker_error_string(c, "(7) Unexpected error. Was expecting environment to have length 0", null);
+  }
+
+  flush(c);
+
+  text_append_string(c.data_section, "(data (i32.const 4) ");
+  text_push(c.data_section, 34);
+  append_little_endian_hex(c.data_section, c.global_offset);
+  text_push(c.data_section, 34);
+  text_append_string(c.data_section, ")");
+
+  if (c.is_core_code) {
+    return c.main_output;
+  }
+
+  if (c.is_entry_file) {
+    text_append(c.core_functions, c.data_section);
+
+    Text wat = text_copy(c.core_functions);
+    text_append(wat, c.inbuilt_wat);
+    text_append(wat, c.main_output);
+    return wat;
+  }
+
+  return null;
+}
+
+// Parses and checks an imported file with its own checker, and merges its
+// structs, functions, globals and strings into this one
+function void visit_import(Checker c, Program program, Import imp) {
+  Text new_namespace = text_copy(imp.namespace);
+
+  if (c.global_namespace.length > 0) {
+    new_namespace = text_copy(c.global_namespace);
+    text_append_string(new_namespace, "_");
+    text_append(new_namespace, imp.namespace);
+  }
+
+  Text file_path = path_join(c.dir_path, imp.file_name);
+  Text source = read_source_file(file_path);
+
+  parser_init_text(source, new_namespace, true);
+  Program imported = parse();
+
+  Checker visitor = checker_new(false, new_namespace, path_join_string(file_path, "../"), false, null);
+  visit_program(visitor, imported, false);
+
+  c.global_offset = c.global_offset + (visitor.global_offset - 8);
+  text_append(c.data_section, visitor.data_section);
+
+  for (int i = 0; i < visitor.string_map.length; i = i + 1) {
+    MapEntry entry = visitor.string_map.items[i];
+    map_set_number(c.string_map, entry.key, entry.number);
+  }
+
+  // TODO check for duplicates
+  for (int i = 0; i < imported.vdecl_stmts.length; i = i + 1) {
+    var_decl_list_push(program.vdecl_stmts, imported.vdecl_stmts.items[i]);
+  }
+
+  for (int i = 0; i < visitor.structs.length; i = i + 1) {
+    MapEntry entry = visitor.structs.items[i];
+
+    if (map_has(c.structs, entry.key)) {
+      Text message = text_from_string("(60) Duplicate struct ");
+      append_quoted(message, entry.key);
+      text_append_string(message, " found");
+      checker_error(c, message, entry.struct_def.struct_name);
+    }
+
+    map_set_struct(c.structs, entry.key, entry.struct_def);
+  }
+
+  for (int i = 0; i < visitor.functions.length; i = i + 1) {
+    MapEntry entry = visitor.functions.items[i];
+
+    if (not is_built_in(entry.key)) {
+      if (map_has(c.functions, entry.key)) {
+        Text message = text_from_string("(59) Duplicate function ");
+        append_quoted(message, entry.key);
+        text_append_string(message, " found");
+        FunDef existing = map_get_fun(c.functions, entry.key);
+        checker_error(c, message, existing.fun_name);
+      }
+
+      map_set_fun(c.functions, entry.key, entry.fun_def);
+    }
+  }
+
+  // TODO test for duplicate namespaces
+  text_list_push(c.namespaces, imp.namespace);
+}
+
+function void visit_struct_def(Checker c, StructDef struct_def) {
+  TextList field_names = text_list_new();
+
+  // The TS checker checks `struct_name in this.namespaces`, which looks at
+  // the array's indexes rather than its values, so it never matches a
+  // struct name
+
+  symbol_add(c.symbol_table, struct_def.struct_name.lexeme, new DataType(false, struct_def.struct_name, null));
+
+  for (int i = 0; i < struct_def.fields.length; i = i + 1) {
+    VarDef field = struct_def.fields.items[i];
+    Text type_name = field.data_type.type_name.lexeme;
+
+    if (field.data_type.namespace != null) {
+      type_name = text_copy(field.data_type.namespace.lexeme);
+      text_append_string(type_name, "_");
+      text_append(type_name, field.data_type.type_name.lexeme);
+    }
+
+    if (text_list_contains(field_names, field.var_name.lexeme)) {
+      Text message = text_from_string("(8) Duplicate field name ");
+      append_quoted(message, field.var_name.lexeme);
+      text_append_string(message, " in struct ");
+      append_quoted(message, struct_def.struct_name.lexeme);
+      checker_error(c, message, field.var_name);
+    }
+
+    text_list_push(field_names, field.var_name.lexeme);
+
+    if ((not is_base_type_name(type_name)) and (not map_has(c.structs, type_name))) {
+      Text message = text_from_string("(9) Type ");
+      append_quoted(message, type_name);
+      text_append_string(message, " not found");
+      checker_error(c, message, field.data_type.type_name);
+    }
+  }
+}
+
+function void visit_fun_def(Checker c, FunDef fun_def) {
+  bool skip = false;
+
+  if (is_built_in(fun_def.fun_name.lexeme) and (not c.is_core_code)) {
+    skip = true;
+  }
+
+  if (c.is_core_code and (fun_def.stmts.length == 0)) {
+    skip = true;
+  }
+
+  if (not skip) {
+    visit_fun_def_body(c, fun_def);
+  }
+}
+
+function void visit_fun_def_body(Checker c, FunDef fun_def) {
+  flush(c);
+
+  c.loop_count = 0;
+  c.declared_variables = var_def_list_new();
+  TextList param_names = text_list_new();
+  TextList stmt_buffers = text_list_new();
+
+  push_environment(c.symbol_table);
+  c.current_return_type = fun_def.return_type;
+
+  if (text_list_contains(c.namespaces, fun_def.fun_name.lexeme)) {
+    checker_error_string(c, "(58) function name conflicts with a namespace", fun_def.fun_name);
+  }
+
+  symbol_add(c.symbol_table, fun_def.fun_name.lexeme, fun_def.return_type);
+
+  c.curr_type = null;
+  visit_data_type(c, fun_def.return_type);
+
+  if (c.curr_type == null) {
+    checker_error_string(c, "(10) Unexpected error. return_type was undefined", fun_def.return_type.type_name);
+  }
+
+  output_with_indent(c, "(func $");
+  output_text(c, fun_def.fun_name.lexeme);
+
+  for (int i = 0; i < fun_def.params.length; i = i + 1) {
+    VarDef param = fun_def.params.items[i];
+    text_list_push(param_names, param.var_name.lexeme);
+    visit_var_def(c, param);
+  }
+
+  c.indent = c.indent + 1;
+
+  for (int i = 0; i < fun_def.stmts.length; i = i + 1) {
+    flush(c);
+    visit_stmt(c, fun_def.stmts.items[i]);
+    text_list_push(stmt_buffers, discard(c));
+  }
+
+  c.indent = c.indent - 1;
+
+  Token func_return_type = fun_def.return_type.type_name;
+  string return_wasm_type = get_wasm_type(func_return_type, fun_def.return_type.is_array);
+  bool did_print_return = func_return_type.type == TT_VOID_TYPE;
+
+  for (int i = 0; i < c.declared_variables.length; i = i + 1) {
+    VarDef variable = c.declared_variables.items[i];
+    Text symbol = variable.var_name.lexeme;
+    DataType data_type = variable.data_type;
+
+    if (is_symbol_a_var(c, symbol)) {
+      string type_of_var = "local";
+      bool is_local = true;
+
+      if (text_list_contains(param_names, symbol)) {
+        type_of_var = "param";
+        is_local = false;
+      }
+
+      if (exists_in_global_env(c.symbol_table, symbol)) {
+        type_of_var = "global";
+        is_local = false;
+      }
+
+      if (is_local) {
+        if (not did_print_return) {
+          output(c, " (result ");
+          output(c, return_wasm_type);
+          output(c, ")");
+          did_print_return = true;
+        }
+
+        output_eol(c);
+        output_indent(c);
+      }
+
+      output(c, " (");
+      output(c, type_of_var);
+      output(c, " $");
+      output_text(c, symbol);
+      output(c, " ");
+      output(c, get_wasm_type(data_type.type_name, data_type.is_array));
+      output(c, ")");
+    }
+  }
+
+  if (not did_print_return) {
+    output(c, " (result ");
+    output(c, return_wasm_type);
+    output(c, ")");
+  }
+
+  output_eol(c);
+  output_with_indent(c, "(local $tmp i32)");
+
+  for (int i = 0; i < stmt_buffers.length; i = i + 1) {
+    output_eol(c);
+    output_text(c, stmt_buffers.items[i]);
+  }
+
+  c.current_return_type = null;
+  pop_environment(c.symbol_table);
+
+  c.indent = c.indent + 1;
+  output_new_line(c);
+  output(c, return_wasm_type);
+  output(c, ".const 0");
+  output_in_new_line(c, "return");
+  c.indent = c.indent - 1;
+
+  output_eol(c);
+  output_with_indent(c, ")");
+  output_eol(c);
+  output_eol(c);
+  flush(c);
+}
+
+function void visit_return_stmt(Checker c, Expr return_expr) {
+  c.curr_type = null;
+
+  visit_expr(c, return_expr, null);
+
+  output_eol(c);
+  output_with_indent(c, "return");
+
+  Token first_token = get_first_rvalue_token(return_expr);
+  DataType expr_type = get_curr_token(c, 40, first_token);
+
+  if (c.current_return_type == null) {
+    checker_error_string(c, "(50) Unexpected error: current_return_type was undefined", first_token);
+  }
+
+  if (not match_type(c.current_return_type, expr_type, true)) {
+    Text message = text_from_string("(11) Return expression's type (");
+    append_quoted(message, type_to_string(expr_type));
+    text_append_string(message, ") does not match function's return type (");
+    append_quoted(message, type_to_string(c.current_return_type));
+    text_append_string(message, ")");
+    checker_error(c, message, first_token);
+  }
+}
+
+function void visit_var_decl(Checker c, VarDecl var_decl) {
+  DataType value_type = null;
+
+  if (var_decl.expr != null) {
+    c.curr_type = null;
+
+    visit_expr(c, var_decl.expr, null);
+
+    Text var_name = var_decl.var_def.var_name.lexeme;
+    string type_of_var = "local";
+
+    if (exists_in_global_env(c.symbol_table, var_name)) {
+      type_of_var = "global";
+    }
+
+    value_type = c.curr_type;
+
+    output_in_new_line(c, type_of_var);
+    output(c, ".set $");
+    output_text(c, var_name);
+  }
+
+  c.curr_type = null;
+  visit_var_def(c, var_decl.var_def);
+  DataType var_type = get_curr_token(c, 41, var_decl.var_def.var_name);
+
+  if (value_type != null) {
+    if (not match_type(var_type, value_type, true)) {
+      Text message = text_from_string("(12) Type mismatch. Tried assigning ");
+      append_quoted(message, type_to_string(value_type));
+      text_append_string(message, " to ");
+      append_quoted(message, type_to_string(var_type));
+      checker_error(c, message, var_decl.var_def.var_name);
+    }
+  }
+}
+
+function void visit_assign_stmt(Checker c, AssignStmt assign_stmt) {
+  c.curr_type = null;
+  visit_expr(c, assign_stmt.expr, null);
+  DataType r_type = get_curr_token(c, 43, get_first_rvalue_token(assign_stmt.expr));
+
+  c.curr_type = null;
+  visit_var_rvalue(c, assign_stmt.lvalue, true);
+  Token l_name = assign_stmt.lvalue.items[0].var_name;
+  DataType l_type = get_curr_token(c, 42, l_name);
+
+  if (not match_type(l_type, r_type, true)) {
+    Text message = text_from_string("(13) Tried assigning ");
+    append_quoted(message, type_to_string(r_type));
+    text_append_string(message, " to ");
+    append_quoted(message, type_to_string(l_type));
+    checker_error(c, message, l_name);
+  }
+}
+
+// Shared by while and for: "(14) while's" and "(15) for's"
+function void check_loop_condition(Checker c, Expr condition, int error_code, string loop_name) {
+  Token first_token = get_first_rvalue_token(condition);
+  DataType curr_type = get_curr_token(c, error_code + 30, first_token);
+
+  if (not is_boolean(curr_type)) {
+    Text message = text_from_string("(");
+    append_int(message, error_code);
+    text_append_string(message, ") ");
+    text_append_string(message, loop_name);
+    text_append_string(message, "'s condition must be a boolean expression/value, but got ");
+    append_quoted(message, type_to_string(curr_type));
+    checker_error(c, message, first_token);
+  }
+}
+
+function void output_loop_start(Checker c) {
+  output_new_line(c);
+  output(c, "(loop $loop");
+  output_int(c, c.loop_count);
+}
+
+function void output_loop_branch(Checker c, int loop_count) {
+  output_new_line(c);
+  output(c, "br $loop");
+  output_int(c, loop_count);
+}
+
+function void visit_while_stmt(Checker c, WhileStmt while_stmt) {
+  push_environment(c.symbol_table);
+
+  c.loop_count = c.loop_count + 1;
+  int current_loop_count = c.loop_count;
+  output_loop_start(c);
+  c.indent = c.indent + 1;
+
+  c.curr_type = null;
+  visit_expr(c, while_stmt.condition, null);
+  output_in_new_line(c, "if");
+  c.indent = c.indent + 1;
+
+  check_loop_condition(c, while_stmt.condition, 14, "while");
+
+  for (int i = 0; i < while_stmt.stmts.length; i = i + 1) {
+    visit_stmt(c, while_stmt.stmts.items[i]);
+  }
+
+  output_loop_branch(c, current_loop_count);
+
+  c.indent = c.indent - 1;
+  output_in_new_line(c, "end");
+  c.indent = c.indent - 1;
+  output_in_new_line(c, ")");
+
+  pop_environment(c.symbol_table);
+}
+
+function void visit_for_stmt(Checker c, ForStmt for_stmt) {
+  push_environment(c.symbol_table);
+
+  visit_var_decl(c, for_stmt.var_decl);
+
+  c.loop_count = c.loop_count + 1;
+  int current_loop_count = c.loop_count;
+  output_loop_start(c);
+  c.indent = c.indent + 1;
+
+  // The condition is checked before the body, so the body
+  // doesn't run when the condition is false to begin with
+  c.curr_type = null;
+  visit_expr(c, for_stmt.condition, null);
+  check_loop_condition(c, for_stmt.condition, 15, "for");
+
+  output_in_new_line(c, "if");
+  c.indent = c.indent + 1;
+
+  for (int i = 0; i < for_stmt.stmts.length; i = i + 1) {
+    visit_stmt(c, for_stmt.stmts.items[i]);
+  }
+
+  visit_assign_stmt(c, for_stmt.assign_stmt);
+
+  output_loop_branch(c, current_loop_count);
+
+  c.indent = c.indent - 1;
+  output_in_new_line(c, "end");
+  c.indent = c.indent - 1;
+  output_in_new_line(c, ")");
+  pop_environment(c.symbol_table);
+}
+
+function void visit_basic_if(Checker c, BasicIf basic_if, bool is_if_part) {
+  push_environment(c.symbol_table);
+
+  c.curr_type = null;
+
+  if (not is_if_part) {
+    output_in_new_line(c, "else");
+    c.indent = c.indent + 1;
+  }
+
+  visit_expr(c, basic_if.condition, null);
+
+  Token first_token = get_first_rvalue_token(basic_if.condition);
+  DataType curr_type = get_curr_token(c, 46, first_token);
+
+  output_in_new_line(c, "if");
+
+  c.indent = c.indent + 1;
+
+  if (not is_boolean(curr_type)) {
+    Text message = text_from_string("(16) if's condition must be a boolean expression/value, but got ");
+    append_quoted(message, type_to_string(curr_type));
+    checker_error(c, message, first_token);
+  }
+
+  for (int i = 0; i < basic_if.stmts.length; i = i + 1) {
+    visit_stmt(c, basic_if.stmts.items[i]);
+  }
+
+  c.indent = c.indent - 1;
+  pop_environment(c.symbol_table);
+}
+
+function void visit_if_stmt(Checker c, IfStmt if_stmt) {
+  bool has_else = if_stmt.else_stmts.length != 0;
+  int start_indent = c.indent;
+
+  visit_basic_if(c, if_stmt.if_part, true);
+
+  for (int i = 0; i < if_stmt.else_ifs.length; i = i + 1) {
+    visit_basic_if(c, if_stmt.else_ifs.items[i], false);
+  }
+
+  push_environment(c.symbol_table);
+
+  if (has_else) {
+    output_in_new_line(c, "else");
+    c.indent = c.indent + 1;
+  }
+
+  for (int i = 0; i < if_stmt.else_stmts.length; i = i + 1) {
+    visit_stmt(c, if_stmt.else_stmts.items[i]);
+  }
+
+  if (has_else) {
+    c.indent = c.indent - 1;
+  }
+
+  output_in_new_line(c, "end");
+
+  while (c.indent > start_indent) {
+    c.indent = c.indent - 1;
+    output_in_new_line(c, "end");
+  }
+
+  pop_environment(c.symbol_table);
+}
+
+function void visit_call_expr(Checker c, CallExpr call_expr) {
+  if (call_expr.namespace != null) {
+    prefix_lexeme(call_expr.fun_name, call_expr.namespace);
+    call_expr.namespace = null;
+  }
+
+  if (not map_has(c.functions, call_expr.fun_name.lexeme)) {
+    Text message = text_from_string("(17) function ");
+    append_quoted(message, call_expr.fun_name.lexeme);
+    text_append_string(message, " not found");
+    checker_error(c, message, call_expr.fun_name);
+  }
+
+  FunDef func_info = map_get_fun(c.functions, call_expr.fun_name.lexeme);
+
+  if (call_expr.args.length != func_info.params.length) {
+    Text message = text_from_string("(18) The call expression must have the same number of arguments as ");
+    append_quoted(message, func_info.fun_name.lexeme);
+    checker_error(c, message, call_expr.fun_name);
+  }
+
+  DataType curr_type = null;
+
+  // TODO refactor
+  bool is_string_copy = text_equals_string(call_expr.fun_name.lexeme, "string_append");
+  Text func_name = func_info.fun_name.lexeme;
+  DataTypeList overloads = overloaded_types(func_name);
+
+  for (int i = 0; i < call_expr.args.length; i = i + 1) {
+    Expr arg = call_expr.args.items[i];
+    Token first_token = get_first_rvalue_token(arg);
+
+    c.curr_type = null;
+    visit_expr(c, arg, null);
+
+    curr_type = get_curr_token(c, 47, first_token);
+
+    if (is_string_copy and (curr_type.type_name.type == TT_STRING_VAL)) {
+      checker_error_string(c, "(65) Can't pass a string literal to string_append", first_token);
+    }
+
+    if (overloads != null) {
+      if (not match_any_type(c, overloads, curr_type)) {
+        // TODO make the error message better
+        Text message = text_from_string("(19) Call expression's arguments' types must match that of the function ");
+        append_quoted(message, func_name);
+        checker_error(c, message, first_token);
+      }
+    } else {
+      DataType param_type = func_info.params.items[i].data_type;
+
+      if (not match_type(param_type, curr_type, true)) {
+        // TODO handle 1st 2nd 3rd 11th 12th 13th
+        Text message = text_from_string("(20) function ");
+        append_quoted(message, func_name);
+        text_append_string(message, "'s ");
+        append_int(message, i + 1);
+        text_append_string(message, "th argument has the type ");
+        append_quoted(message, type_to_string(param_type));
+        text_append_string(message, ", but got ");
+        append_quoted(message, type_to_string(curr_type));
+        checker_error(c, message, call_expr.fun_name);
+      }
+    }
+  }
+
+  Text function_to_call = func_info.fun_name.lexeme;
+
+  if (not is_mapped_function(function_to_call)) {
+    if (text_equals_string(function_to_call, "print")) {
+      output_in_new_line(c, "call $");
+      output(c, get_print_function(curr_type, c.is_core_code));
+    } elseif (text_equals_string(function_to_call, "length")) {
+      output_in_new_line(c, "call $");
+      output(c, get_length_function(curr_type));
+    } else {
+      output_in_new_line(c, "call $");
+      output_text(c, function_to_call);
+    }
+  } else {
+    output_in_new_line(c, get_mapped_function(function_to_call));
+  }
+
+  c.curr_type = func_info.return_type;
+
+  // The result of a call statement is unused, and leaving it on the
+  // stack makes the enclosing block invalid
+  if (call_expr.is_stmt and (func_info.return_type.type_name.type != TT_VOID_TYPE)) {
+    output_in_new_line(c, "drop");
+  }
+}
+
+function DataType bool_data_type() {
+  return make_data_type(false, TT_BOOL_TYPE, "bool");
+}
+
+// last_op is the operator before this expression, when it's the rest of
+// another expression. The instruction for it is output here, after this
+// expression's first term
+function void visit_expr(Checker c, Expr e, Token last_op) {
+  c.curr_type = null;
+  Text op = null;
+
+  bool was_bool_op_used = false;
+
+  if (e.op != null) {
+    was_bool_op_used = is_boolean_op(e.op.lexeme);
+  }
+
+  bool is_boolean_expr = was_bool_op_used or e.not_op;
+
+  visit_term(c, e.first);
+  DataType first_type = c.curr_type;
+
+  // The TS checker prints "Can't use a string literal in an expression"
+  // here for some string literals, but only as a warning
+
+  if (e.op != null) {
+    op = e.op.lexeme;
+  }
+
+  if (e.rest != null) {
+    visit_expr(c, e.rest, e.op);
+
+    DataType rest_type = c.curr_type;
+
+    if ((first_type == null) or (rest_type == null)) {
+      checker_error_string(c, "(22) Unexpected error. first_type or rest_type was undefined.", get_first_rvalue_token(e));
+    }
+
+    if (not match_type(first_type, rest_type, false)) {
+      Text message = text_from_string("(23) Operations can only be performed on same types, but got ");
+      append_quoted(message, type_to_string(first_type));
+      text_append_string(message, " and ");
+      append_quoted(message, type_to_string(rest_type));
+      checker_error(c, message, e.op);
+    }
+
+    if (first_type.is_array and (not (text_equals_string(op, "==") or text_equals_string(op, "!=")))) {
+      Text message = text_from_string("(54) Can't use operator ");
+      append_quoted(message, op);
+      text_append_string(message, " on arrays");
+      checker_error(c, message, e.op);
+    }
+
+    // The TS checker's check that the operator is supported for the type
+    // (24) is commented out
+
+    if (is_boolean_op(op)) {
+      // TODO make the line and column right
+      c.curr_type = bool_data_type();
+    }
+  }
+
+  // TODO: remove
+  if ((last_op != null) and (first_type != null)) {
+    bool is_concat = false;
+
+    if (is_string_type(first_type.type_name.type)) {
+      if (last_op.type == TT_PLUS) {
+        is_concat = true;
+      } elseif (e.op != null) {
+        is_concat = e.op.type == TT_PLUS;
+      }
+    }
+
+    if (is_concat) {
+      output_in_new_line(c, "call $string_concat");
+    } else {
+      output_in_new_line(c, get_wasm_type(first_type.type_name, first_type.is_array));
+      output(c, get_wasm_op(last_op, first_type.type_name));
+    }
+  }
+
+  if (e.not_op) {
+    // TODO make this a xor
+    output_in_new_line(c, "i32.const -1");
+    output_in_new_line(c, "i32.mul");
+    output_in_new_line(c, "i32.const 1");
+    output_in_new_line(c, "i32.add");
+  }
+
+  if (is_boolean_expr) {
+    if (not is_boolean(c.curr_type)) {
+      Text message = text_from_string("(25) Was expecting a boolean value, since ");
+
+      if (was_bool_op_used) {
+        text_append_string(message, "the boolean operator ");
+        append_quoted(message, e.op.lexeme);
+        text_append_string(message, " was used.");
+      } else {
+        text_push(message, 34);
+        text_append_string(message, "not");
+        text_push(message, 34);
+        text_append_string(message, " was used");
+      }
+
+      checker_error(c, message, get_first_rvalue_token(e));
+    }
+  }
+}
+
+function void visit_data_type(Checker c, DataType data_type) {
+  // note: allowing void (bad cases of void caught by parser)
+  if (data_type.namespace != null) {
+    prefix_lexeme(data_type.type_name, data_type.namespace);
+  }
+
+  Text name = data_type.type_name.lexeme;
+
+  if (text_equals_string(name, "void") or is_base_type_name(name) or map_has(c.structs, name)) {
+    c.curr_type = data_type;
+  } else {
+    Text message = text_from_string("(26) Could not find a struct named ");
+    append_quoted(message, name);
+    checker_error(c, message, data_type.type_name);
+  }
+}
+
+function void visit_var_def(Checker c, VarDef var_def) {
+  visit_data_type(c, var_def.data_type);
+
+  Text name = var_def.var_name.lexeme;
+  bool in_curr_env = exists_in_curr_env(c.symbol_table, name);
+  bool is_function = map_has(c.functions, name);
+  bool is_struct = map_has(c.structs, name);
+
+  if (in_curr_env or is_function or is_struct) {
+    Text message = text_from_string("(27) Duplicate variable named ");
+    append_quoted(message, name);
+    text_append_string(message, " found");
+
+    if (in_curr_env) {
+      text_append_string(message, " in the same scope");
+    } elseif (is_function) {
+      text_append_string(message, ", since a function with the name ");
+      append_quoted(message, name);
+      text_append_string(message, " already exists");
+    } else {
+      text_append_string(message, ", since a struct with the name ");
+      append_quoted(message, name);
+      text_append_string(message, " already exists");
+    }
+
+    checker_error(c, message, var_def.var_name);
+  } else {
+    symbol_add(c.symbol_table, name, var_def.data_type);
+    var_def_list_push(c.declared_variables, var_def);
+  }
+
+  c.curr_type = var_def.data_type;
+}
+
+function void visit_simple_rvalue(Checker c, Token value) {
+  int line = value.line;
+  int column = value.column;
+  int t = value.type;
+  DataType type = null;
+
+  if (t == TT_STRING_VAL) {
+    if (not map_has(c.string_map, value.lexeme)) {
+      map_set_number(c.string_map, value.lexeme, c.global_offset + 4);
+
+      text_append_string(c.data_section, "(data (i32.const ");
+      append_int(c.data_section, c.global_offset);
+      text_append_string(c.data_section, ") ");
+      text_push(c.data_section, 34);
+
+      append_little_endian_hex(c.data_section, value.lexeme.length);
+      c.global_offset = c.global_offset + 4;
+
+      for (int i = 0; i < value.lexeme.length; i = i + 1) {
+        append_little_endian_hex(c.data_section, value.lexeme.chars[i]);
+        c.global_offset = c.global_offset + 4;
+      }
+
+      text_push(c.data_section, 34);
+      text_append_string(c.data_section, ")");
+      text_push(c.data_section, 10);
+    }
+
+    output_in_new_line(c, "i32.const ");
+    MapEntry string_entry = map_find(c.string_map, value.lexeme);
+    output_int(c, string_entry.number);
+    output_in_new_line(c, "call $main_string_ini");
+  } else {
+    output_in_new_line(c, get_wasm_type(value, false));
+    output(c, ".const ");
+    output_text(c, get_wasm_value(value));
+  }
+
+  if (t == TT_INT_VAL) {
+    type = new DataType(false, make_token(TT_INT_VAL, "int", line, column), null);
+  } elseif (t == TT_DOUBLE_VAL) {
+    type = new DataType(false, make_token(TT_DOUBLE_VAL, "double", line, column), null);
+  } elseif (t == TT_STRING_VAL) {
+    type = new DataType(false, make_token(TT_STRING_VAL, "string", line, column), null);
+  } elseif (t == TT_BOOL_VAL) {
+    type = new DataType(false, make_token(TT_BOOL_VAL, "bool", line, column), null);
+  } elseif (t == TT_NULL_VAL) {
+    type = new DataType(false, make_token(TT_NULL_VAL, "void", line, column), null);
+  } else {
+    checker_error_string(c, "(39) Unexpected error. type_token was undefined", value);
+  }
+
+  c.curr_type = type;
+}
+
+function void visit_new_rvalue(Checker c, NewRValue new_rvalue) {
+  if (is_base_type_name(new_rvalue.type_name.lexeme)) {
+    // Must be an array
+    c.curr_type = new DataType(true, new_rvalue.type_name, null);
+  } else {
+    // Must be referencing a struct
+    Text struct_name = new_rvalue.type_name.lexeme;
+
+    if (new_rvalue.namespace != null) {
+      struct_name = text_copy(new_rvalue.namespace.lexeme);
+      text_append_string(struct_name, "_");
+      text_append(struct_name, new_rvalue.type_name.lexeme);
+    }
+
+    DataType struct_type = symbol_get(c.symbol_table, struct_name);
+
+    if (struct_type == null) {
+      Text message = text_from_string("(28) struct ");
+      append_quoted(message, struct_name);
+      text_append_string(message, " not found");
+      checker_error(c, message, new_rvalue.type_name);
+    }
+
+    if (new_rvalue.struct_params != null) {
+      ExprList params = new_rvalue.struct_params;
+      StructDef struct_def = map_get_struct(c.structs, struct_type.type_name.lexeme);
+      VarDefList struct_fields = struct_def.fields;
+
+      if (struct_fields.length != params.length) {
+        checker_error_string(c, "(29) A struct's instances must have the same number of arguments as its definition.", new_rvalue.type_name);
+      }
+
+      output_in_new_line(c, "i32.const ");
+      output_int(c, get_struct_total_size(struct_def));
+      output_in_new_line(c, "call $allocate_struct");
+      output_in_new_line(c, "local.set $tmp");
+
+      for (int i = 0; i < params.length; i = i + 1) {
+        Expr param = params.items[i];
+        Token first_token = get_first_rvalue_token(param);
+        VarDef field = struct_fields.items[i];
+
+        // The struct pointer is pushed before the field's value,
+        // and init_struct_field returns it to restore $tmp, since
+        // a nested struct constructor in the value overwrites $tmp
+        output_in_new_line(c, "local.get $tmp");
+
+        c.curr_type = null;
+        visit_expr(c, param, null);
+        DataType curr_type = get_curr_token(c, 48, first_token);
+
+        if (not match_type(field.data_type, curr_type, true)) {
+          // TODO 1th :p
+          Text message = text_from_string("(30) struct ");
+          append_quoted(message, struct_name);
+          text_append_string(message, "'s ");
+          append_int(message, i + 1);
+          text_append_string(message, "th argument has the type ");
+          append_quoted(message, type_to_string(field.data_type));
+          text_append_string(message, ", but got ");
+          append_quoted(message, type_to_string(curr_type));
+          checker_error(c, message, first_token);
+        }
+
+        output_in_new_line(c, "i32.const ");
+        output_int(c, get_field_cummulative_size(struct_def, field.var_name.lexeme));
+        output_in_new_line(c, "call $");
+        output(c, get_wasm_type(curr_type.type_name, curr_type.is_array));
+        output(c, "_init_struct_field");
+        output_in_new_line(c, "local.set $tmp");
+      }
+
+      output_in_new_line(c, "local.get $tmp");
+
+      c.curr_type = struct_type;
+    } else {
+      c.curr_type = new DataType(true, struct_type.type_name, null);
+    }
+  }
+
+  DataType orig_type = c.curr_type;
+
+  if (orig_type.is_array) {
+    if (new_rvalue.array_expr == null) {
+      checker_error_string(c, "(51) Unexpected error. array_expr was none", new_rvalue.type_name);
+    }
+
+    visit_expr(c, new_rvalue.array_expr, null);
+    output_in_new_line(c, "call $");
+    output(c, get_wasm_type(orig_type.type_name, false));
+    output(c, "_new_array");
+
+    DataType curr_type = get_curr_token(c, 52, new_rvalue.type_name);
+
+    if (not text_equals_string(curr_type.type_name.lexeme, "int")) {
+      Text message = text_from_string("(53) Array expression must evaluate to a number, but got ");
+      append_quoted(message, curr_type.type_name.lexeme);
+      checker_error(c, message, new_rvalue.type_name);
+    }
+  }
+
+  c.curr_type = orig_type;
+}
+
+// Visits a VarRValue (should_store false) or an AssignStmt's lvalue
+// (should_store true), which stores the value on the stack in the last
+// part of the path
+function void visit_var_rvalue(Checker c, VarRefList path_array, bool should_store) {
+  DataType last_type = null;
+  DataType curr_type = null;
+  DataType array_type = null;
+  bool was_struct = false;
+  Token name = null;
+
+  for (int i = 0; i < path_array.length; i = i + 1) {
+    VarRef path = path_array.items[i];
+    bool is_last = i == (path_array.length - 1);
+    bool did_curr_change = false;
+
+    name = path.var_name;
+
+    // Means this is the first node in the path
+    // which also means that it is a variable
+    if (last_type == null) {
+      curr_type = symbol_get(c.symbol_table, name.lexeme);
+      did_curr_change = true;
+      array_type = curr_type;
+
+      if (curr_type == null) {
+        Text message = text_from_string("(31) Variable ");
+        append_quoted(message, name.lexeme);
+        text_append_string(message, " not found");
+        checker_error(c, message, name);
+      }
+
+      if (path.array_expr == null) {
+        output_in_new_line(c, get_var_prefix(c.symbol_table, name.lexeme));
+
+        if (should_store and is_last) {
+          output(c, ".set $");
+        } else {
+          output(c, ".get $");
+        }
+
+        output_text(c, name.lexeme);
+      }
+    }
+
+    if (curr_type == null) {
+      checker_error_string(c, "(32) Unexpected error. curr_type was undefined", name);
+    }
+
+    was_struct = false;
+    bool is_struct_field = false;
+
+    if (last_type != null) {
+      is_struct_field = map_has(c.structs, last_type.type_name.lexeme) and (not last_type.is_array);
+    }
+
+    if (is_struct_field) {
+      // Must be a struct
+      StructDef struct_def = map_get_struct(c.structs, last_type.type_name.lexeme);
+      curr_type = get_field_type(struct_def, name.lexeme);
+
+      if (curr_type == null) {
+        checker_error_string(c, "(55) Unexpected error. curr_type was undefined.", name);
+      }
+
+      array_type = curr_type;
+
+      output_in_new_line(c, "call $check_if_null");
+      output_in_new_line(c, "i32.const ");
+      output_int(c, get_field_cummulative_size(struct_def, name.lexeme));
+
+      if (should_store and is_last and (path.array_expr == null)) {
+        output_in_new_line(c, "call $");
+        output(c, get_wasm_type(array_type.type_name, array_type.is_array));
+        output(c, "_assign_to_struct");
+      } else {
+        output_in_new_line(c, "i32.add");
+        output_in_new_line(c, get_wasm_type(array_type.type_name, array_type.is_array));
+        output(c, ".load");
+      }
+
+      did_curr_change = true;
+      was_struct = true;
+    }
+
+    if (path.array_expr != null) {
+      // Must be an array
+      if (curr_type.is_array) {
+        c.curr_type = null;
+        visit_expr(c, path.array_expr, null);
+
+        Token original_type = curr_type.type_name;
+        curr_type = get_curr_token(c, 49, curr_type.type_name);
+
+        if (not was_struct) {
+          if (exists_in_global_env(c.symbol_table, name.lexeme)) {
+            output_in_new_line(c, "global.get $");
+          } else {
+            output_in_new_line(c, "local.get $");
+          }
+
+          output_text(c, name.lexeme);
+        }
+
+        if (array_type == null) {
+          checker_error_string(c, "(56) Unexpected error. array_type was undefined.", name);
+        }
+
+        output_in_new_line(c, "call $");
+        output(c, get_wasm_type(array_type.type_name, false));
+
+        if (should_store and is_last) {
+          output(c, "_set_array_elem");
+        } else {
+          output(c, "_get_array_elem");
+        }
+
+        if (was_struct) {
+          output(c, "_alt");
+        }
+
+        if (not text_equals_string(curr_type.type_name.lexeme, "int")) {
+          Text message = text_from_string("(35) Array index must be an integer, but found type ");
+          text_append(message, type_to_string(curr_type));
+          checker_error(c, message, name);
+        }
+
+        // is_array is false since we don't support 2D arrays
+        curr_type = new DataType(false, original_type, null);
+      } else {
+        checker_error_string(c, "(36) Can't access an element of a non-array", name);
+      }
+
+      did_curr_change = true;
+    }
+
+    if ((not did_curr_change) and (last_type != null)) {
+      Text message = text_from_string("(37) Cannot read ");
+      append_quoted(message, name.lexeme);
+      text_append_string(message, " from ");
+      append_quoted(message, type_to_string(curr_type));
+      checker_error(c, message, name);
+    }
+
+    last_type = curr_type;
+  }
+
+  if (last_type == null) {
+    checker_error_string(c, "(38) Unexpected error. last_type was undefined", name);
+  }
+
+  c.curr_type = last_type;
+}

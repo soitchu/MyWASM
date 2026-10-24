@@ -1,0 +1,88 @@
+// Compiles MyPL to WAT, like Compiler/index.ts with the wat option, and
+// prints the WAT. The native compiler can only read stdin, so its input is:
+//
+//   <1 for --unsafe-array, otherwise 0>
+//   <path of the main file>
+//   <number of files>
+//   then for each file: <path>, <number of lines>, <lines>
+//
+// The first file is inbuilt.mypl, the second is the main file, and the
+// rest are the files it imports, by the path the import resolves to
+
+function Text read_line() {
+  string line = input();
+
+  if (line == null) {
+    fatal_error("Unexpected end of input");
+  }
+
+  Text text = text_new();
+  int len = length(line);
+
+  for (int i = 0; i < len; i = i + 1) {
+    text_push(text, char_code(line, i));
+  }
+
+  delete line;
+  return text;
+}
+
+function int read_line_int() {
+  Text line = read_line();
+  int value = 0;
+
+  for (int i = 0; i < line.length; i = i + 1) {
+    value = (value * 10) + (line.chars[i] - 48);
+  }
+
+  text_delete(line);
+  return value;
+}
+
+export function int main() {
+  data_types_init();
+
+  bool unsafe_array = read_line_int() == 1;
+  Text main_path = read_line();
+  int file_count = read_line_int();
+
+  for (int i = 0; i < file_count; i = i + 1) {
+    Text path = read_line();
+    int line_count = read_line_int();
+    Text source = text_new();
+
+    for (int j = 0; j < line_count; j = j + 1) {
+      Text line = read_line();
+      text_append(source, line);
+      text_delete(line);
+
+      // 10 is a newline
+      text_push(source, 10);
+    }
+
+    source_files_add(path, source);
+  }
+
+  // The built-in functions, compiled with every check bypassed
+  parser_init(source_files.items[0].source, "w", false);
+  Program inbuilt_program = parse();
+
+  Checker inbuilt_checker = checker_new(true, null, path_join_string(main_path, "./inbuilt.mypl"), true, null);
+  Text inbuilt_wat = visit_program(inbuilt_checker, inbuilt_program, unsafe_array);
+
+  parser_init(source_files.items[1].source, "main", true);
+  Program program = parse();
+
+  Checker checker = checker_new(true, null, path_join_string(main_path, "../"), false, inbuilt_wat);
+
+  checker.global_offset = checker.global_offset + (inbuilt_checker.global_offset - 8);
+  text_append(checker.data_section, inbuilt_checker.data_section);
+
+  for (int i = 0; i < inbuilt_checker.string_map.length; i = i + 1) {
+    MapEntry entry = inbuilt_checker.string_map.items[i];
+    map_set_number(checker.string_map, entry.key, entry.number);
+  }
+
+  Text wat = visit_program(checker, program, unsafe_array);
+  text_print(wat);
+}
