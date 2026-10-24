@@ -1,4 +1,4 @@
-import { MemoryManager } from "./MemoryManager.ts";
+import { createAllocator, type Allocator } from "./Allocator.ts";
 import rl from "readline-sync";
 import { readFileSync } from "node:fs";
 
@@ -41,7 +41,7 @@ interface DeallocQueue {
 
 
 export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Array, zeroOutMemory: boolean = false, captureOutput: boolean = false) {
-    const freed_mem = new MemoryManager();
+    const allocator = createAllocator(memory.buffer.byteLength);
     const intArray = new Int32Array(memory.buffer);
     // const nullError = new WebAssembly.Tag({ parameters: ["i32"] });
 
@@ -64,20 +64,20 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
     let toDealloc: DeallocQueue = head;
 
 
-    function deallocate(queue: DeallocQueue, freed_mem: MemoryManager) {
+    function deallocate(queue: DeallocQueue, allocator: Allocator) {
         let head = queue as DeallocQueue | null;
         
         while(head !== null && head.next !== null) {
             // console.log(used);
             used -= head.size;
-            freed_mem.add(head.size, head.index);
+            allocator.free(head.index, head.size);
             head = head.next;
         }
     
     }
 
     const startDealloc = function() {
-        deallocate(head, freed_mem);
+        deallocate(head, allocator);
         head = {
             next: null,
             index: 0,
@@ -136,31 +136,8 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
                 // of the memory goes back into the freed pool
                 // let start = performance.now();
 
-                const foundOffset = freed_mem.getOffset(requestedSize);
-                
-                if (!foundOffset) {
-                    let tmpOffset = freed_mem.globalOffset;
-
-                    if((freed_mem.globalOffset + requestedSize) >= totalMemory) {
-                        // if(!second) {
-                        //     console.log("Trying to deallocate and allocate");
-                        //     startDealloc();
-                        //     return b.env.allocate_memory(requestedSize, true)
-                        // } else{
-                            throw new Error("Out of memory");
-                        // }
-                    }
-                    
-                    freed_mem.increaseGlobalOffset(requestedSize);
-
-                    // sum += performance.now() - start;
-
-                    return tmpOffset;
-                }
-                else {
-                    // sum += performance.now() - start;
-                    return foundOffset;
-                }
+                // Throws "Out of memory" when the memory is full
+                return allocator.allocate(requestedSize);
             },
             deallocate_memory(index: number, size: number) {
                 // let start = performance.now();
@@ -187,7 +164,7 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
 
                 // console.log(head);
                 // toDealloc.push(size, index);
-                freed_mem.add(size, index);
+                allocator.free(index, size);
                 // sum += performance.now() - start;
                 // console.log(sum);
             },
@@ -200,7 +177,7 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
         }
     }));
 
-    freed_mem.globalOffset = new Uint32Array(memory.buffer)[1];
+    allocator.setGlobalOffset(new Uint32Array(memory.buffer)[1]);
 
     returnObject.wasmModule = wasmModule;
 
