@@ -3,9 +3,30 @@ import { Lexer } from "./Lexer";
 import { SymbolTable } from "./SymbolTable";
 import * as ast from "./types";
 
-function empty_expr() {
-  // @ts-expect-error
-  return new ast.Expr(false, undefined, undefined, undefined);
+// Higher binds tighter
+const BIN_OP_PRECEDENCE: { [key: string]: number } = {
+  [ast.TokenType.OR]: 1,
+  [ast.TokenType.AND]: 2,
+  [ast.TokenType.EQUAL]: 3,
+  [ast.TokenType.NOT_EQUAL]: 3,
+  [ast.TokenType.LESS]: 4,
+  [ast.TokenType.GREATER]: 4,
+  [ast.TokenType.LESS_EQ]: 4,
+  [ast.TokenType.GREATER_EQ]: 4,
+  [ast.TokenType.PLUS]: 5,
+  [ast.TokenType.MINUS]: 5,
+  [ast.TokenType.TIMES]: 6,
+  [ast.TokenType.DIVIDE]: 6,
+  [ast.TokenType.MOD]: 6,
+};
+
+// Turns an expression into a term that can be used as an operand
+function as_term(expr: ast.Expr): ast.ExprTerm {
+  if (expr.op === undefined && !expr.not_op) {
+    return expr.first;
+  }
+
+  return new ast.ComplexTerm(expr);
 }
 
 const EXPR_START_TOKENS = [
@@ -654,7 +675,7 @@ export class ASTParser {
       "(50) IF must be followed by an opening LPAREN"
     );
 
-    const condition = this.expr(empty_expr());
+    const condition = this.expr();
 
     this.eat(
       ast.TokenType.RPAREN,
@@ -706,7 +727,7 @@ export class ASTParser {
         "(54) elseif keyword must be followed by LPAREN, but"
       );
 
-      const condition = this.expr(empty_expr());
+      const condition = this.expr();
 
       this.eat(ast.TokenType.RPAREN, "(55) Was expecting closing RPAREN, but");
       this.eat(ast.TokenType.LBRACE, "(56) Was expecting LBRACE, but");
@@ -766,7 +787,7 @@ export class ASTParser {
       "(45) WHILE must be followed by an opening LPAREN"
     );
 
-    const condition = this.expr(empty_expr());
+    const condition = this.expr();
 
     this.eat(
       ast.TokenType.RPAREN,
@@ -813,7 +834,7 @@ export class ASTParser {
       "(21) for's variable declarations must be followed by a semicolon, but"
     );
 
-    const condition = this.expr(empty_expr());
+    const condition = this.expr();
 
     this.eat(
       ast.TokenType.SEMICOLON,
@@ -861,7 +882,7 @@ export class ASTParser {
       "(26) return statements must begin with RETURN, but"
     );
 
-    return new ast.ReturnStmt(this.expr(empty_expr()));
+    return new ast.ReturnStmt(this.expr());
   }
 
   assign_stmt(data_type: ast.DataType) {
@@ -876,7 +897,7 @@ export class ASTParser {
       "(28) Lvalues must be followed by an ASSIGN, but"
     );
 
-    const expr = this.expr(empty_expr());
+    const expr = this.expr();
 
     return new ast.AssignStmt(lvalues, expr);
   }
@@ -891,7 +912,7 @@ export class ASTParser {
 
     if (this.match(ast.TokenType.LBRACKET)) {
       this.advance();
-      var_ref.array_expr = this.expr(empty_expr());
+      var_ref.array_expr = this.expr();
       this.eat(ast.TokenType.RBRACKET, "(30) Missing matching RBRACKET,");
     }
 
@@ -906,7 +927,7 @@ export class ASTParser {
 
       if (this.match(ast.TokenType.LBRACKET)) {
         this.advance();
-        var_ref.array_expr = this.expr(empty_expr());
+        var_ref.array_expr = this.expr();
         this.eat(ast.TokenType.RBRACKET, "(32) Missing matching RBRACKET,");
       }
     }
@@ -928,11 +949,11 @@ export class ASTParser {
     );
 
     if (this.match_any(EXPR_START_TOKENS)) {
-      expr_list.push(this.expr(empty_expr()));
+      expr_list.push(this.expr());
 
       while (this.match(ast.TokenType.COMMA)) {
         this.advance();
-        expr_list.push(this.expr(empty_expr()));
+        expr_list.push(this.expr());
       }
     }
 
@@ -983,7 +1004,7 @@ export class ASTParser {
     if (this.match(ast.TokenType.ASSIGN)) {
       this.advance();
 
-      expr = this.expr(empty_expr());
+      expr = this.expr();
       // # TODO: make this actually part of the grammar
 
       if (expect_literal) {
@@ -1005,35 +1026,66 @@ export class ASTParser {
     return new ast.VarDecl(var_def, expr);
   }
 
-  expr(expr: ast.Expr): ast.Expr {
+  expr(): ast.Expr {
     /**
-            Grammar: ( <rvalue> | NOT <expr> | LPAREN <expr> RPAREN ) ( <bin_op> <expr> | ϵ )
+            Grammar: <operand> ( <bin_op> <operand> )∗
+            Binary operators are left-associative and grouped by BIN_OP_PRECEDENCE.
         */
 
-    if (expr === undefined) {
-      // @ts-expect-error
-      return;
+    return this.binary_expr(0);
+  }
+
+  binary_expr(min_precedence: number): ast.Expr {
+    // Precedence climbing. Each operation is built as if it were fully
+    // parenthesized, so `a - b * c - d` becomes `(a - (b * c)) - d`
+    let left = this.operand();
+
+    while (
+      this.is_bin_op() &&
+      BIN_OP_PRECEDENCE[this.curr_token.token_type] > min_precedence
+    ) {
+      const op = this.curr_token;
+      this.advance();
+
+      const right = this.binary_expr(BIN_OP_PRECEDENCE[op.token_type]);
+
+      left = new ast.Expr(
+        false,
+        as_term(left),
+        op,
+        new ast.Expr(false, as_term(right), undefined, undefined)
+      );
     }
+
+    return left;
+  }
+
+  operand(): ast.Expr {
+    /**
+            Grammar: <rvalue> | NOT <expr> | LPAREN <expr> RPAREN
+        */
 
     if (this.match(ast.TokenType.NOT)) {
+      // not applies to everything after it, e.g. `not a == b` is `not (a == b)`
+      this.advance();
+      const expr = this.expr();
       expr.not_op = !expr.not_op;
+      return expr;
+    }
+
+    if (this.match(ast.TokenType.LPAREN)) {
       this.advance();
-      this.expr(expr);
-    } else if (this.match(ast.TokenType.LPAREN)) {
-      this.advance();
-      expr.first = new ast.ComplexTerm(this.expr(empty_expr()) as ast.Expr);
+      const first = new ast.ComplexTerm(this.expr());
       this.eat(ast.TokenType.RPAREN, "(36) Missing closing RPAREN. ");
-    } else {
-      expr.first = new ast.SimpleTerm(this.rvalue());
+      return new ast.Expr(false, first, undefined, undefined);
     }
 
-    if (this.is_bin_op()) {
-      expr.op = this.curr_token;
-      this.advance();
-      expr.rest = this.expr(empty_expr());
-    }
-
-    return expr;
+    return new ast.Expr(
+      false,
+      new ast.SimpleTerm(this.rvalue()),
+      undefined,
+      undefined
+    );
   }
 
   var_rvalue(data_type: ast.DataType) {
@@ -1143,19 +1195,19 @@ export class ASTParser {
         struct_params = [];
 
         if (this.match_any(EXPR_START_TOKENS)) {
-          struct_params.push(this.expr(empty_expr()));
+          struct_params.push(this.expr());
         }
 
         while (this.match(ast.TokenType.COMMA)) {
           this.advance();
-          struct_params.push(this.expr(empty_expr()));
+          struct_params.push(this.expr());
         }
 
         this.eat(ast.TokenType.RPAREN, "(37) Missing closing RPAREN");
       } else {
         // TODO: refactor
         this.eat(ast.TokenType.LBRACKET, "(38) Missing opening LBRACKET");
-        array_expr = this.expr(empty_expr());
+        array_expr = this.expr();
         this.eat(ast.TokenType.RBRACKET, "(39) Missing closing RBRACKET");
       }
     } else {
@@ -1167,7 +1219,7 @@ export class ASTParser {
 
       this.advance();
       this.eat(ast.TokenType.LBRACKET, "(41) Missing opening LBRACKET");
-      array_expr = this.expr(empty_expr());
+      array_expr = this.expr();
       this.eat(ast.TokenType.RBRACKET, "(42) Missing closing RBRACKET");
     }
 

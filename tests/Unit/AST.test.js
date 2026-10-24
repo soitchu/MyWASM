@@ -689,16 +689,17 @@ test("test_expr_with_two_ops", () => {
     const p = new ASTParser(new Lexer(new StringBuffer(in_stream)), undefined, false).parse();
     expect(len(p.fun_defs[0].stmts)).toBe(1)
     const stmt = p.fun_defs[0].stmts[0]
+    // parsed as (1 / 2) * 3
     expect(stmt.expr.not_op).toBe(false)
-    expect(stmt.expr.first.rvalue.value.lexeme).toBe('1')
-    expect(stmt.expr.op.lexeme).toBe('/')
+    expect(stmt.expr.first.expr.first.rvalue.value.lexeme).toBe('1')
+    expect(stmt.expr.first.expr.op.lexeme).toBe('/')
+    expect(stmt.expr.first.expr.rest.first.rvalue.value.lexeme).toBe('2')
+    expect(stmt.expr.first.expr.rest.op).toBe(undefined)
+    expect(stmt.expr.op.lexeme).toBe('*')
     expect(stmt.expr.rest.not_op).toBe(false)
-    expect(stmt.expr.rest.first.rvalue.value.lexeme).toBe('2')
-    expect(stmt.expr.rest.op.lexeme).toBe('*')
-    expect(stmt.expr.rest.rest.not_op).toBe(false)
-    expect(stmt.expr.rest.rest.first.rvalue.value.lexeme).toBe('3')
-    expect(stmt.expr.rest.rest.op).toBe(undefined)
-    expect(stmt.expr.rest.rest.rest).toBe(undefined)
+    expect(stmt.expr.rest.first.rvalue.value.lexeme).toBe('3')
+    expect(stmt.expr.rest.op).toBe(undefined)
+    expect(stmt.expr.rest.rest).toBe(undefined)
 
 });
 test("test_empty_call_expr", () => {

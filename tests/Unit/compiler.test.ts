@@ -72,7 +72,7 @@ test("chained_expression", async () => {
     }
   `);
 
-  expect(result).toBe(20);
+  expect(result).toBe(0);
 });
 
 test("expr_with_parens_1", async () => {
@@ -134,7 +134,7 @@ test("chained_expr_with_parens", async () => {
     }
   `);
 
-  expect(result).toBe(7);
+  expect(result).toBe(-67);
 });
 
 test("bool_expr_1", async () => {
