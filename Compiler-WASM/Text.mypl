@@ -1,0 +1,156 @@
+// A growable buffer of character codes. The native compiler works with
+// these instead of strings, since strings are immutable and building them
+// one character at a time allocates a new string per character
+
+struct Text {
+  array int chars;
+  int length;
+}
+
+function Text text_new() {
+  return new Text(new int[16], 0);
+}
+
+function void text_push(Text text, int code) {
+  if (text.length == length(text.chars)) {
+    array int old_chars = text.chars;
+    array int new_chars = new int[length(old_chars) * 2];
+
+    for (int i = 0; i < text.length; i = i + 1) {
+      new_chars[i] = old_chars[i];
+    }
+
+    text.chars = new_chars;
+    delete old_chars;
+  }
+
+  text.chars[text.length] = code;
+  text.length = text.length + 1;
+}
+
+function void text_append(Text text, Text other) {
+  for (int i = 0; i < other.length; i = i + 1) {
+    text_push(text, other.chars[i]);
+  }
+}
+
+function void text_append_string(Text text, string str) {
+  int len = length(str);
+
+  for (int i = 0; i < len; i = i + 1) {
+    text_push(text, char_code(str, i));
+  }
+}
+
+function Text text_from_string(string str) {
+  Text text = text_new();
+  text_append_string(text, str);
+  return text;
+}
+
+function Text text_copy(Text text) {
+  Text copy = text_new();
+  text_append(copy, text);
+  return copy;
+}
+
+function void text_delete(Text text) {
+  array int chars = text.chars;
+  delete chars;
+  delete text;
+}
+
+function int text_at(Text text, int index) {
+  return text.chars[index];
+}
+
+function bool text_equals(Text a, Text b) {
+  if (a.length != b.length) {
+    return false;
+  }
+
+  for (int i = 0; i < a.length; i = i + 1) {
+    if (a.chars[i] != b.chars[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function bool text_equals_string(Text text, string str) {
+  if (text.length != length(str)) {
+    return false;
+  }
+
+  for (int i = 0; i < text.length; i = i + 1) {
+    if (text.chars[i] != char_code(str, i)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Prints the text. The runtime's print turns a backslash followed by n into
+// a newline, so the text is printed in pieces that each end at a backslash
+function void text_print(Text text) {
+  int start = 0;
+
+  for (int i = 0; i < text.length; i = i + 1) {
+    // 92 is a backslash
+    if (text.chars[i] == 92) {
+      text_print_range(text, start, i + 1);
+      start = i + 1;
+    }
+  }
+
+  text_print_range(text, start, text.length);
+}
+
+function void text_print_range(Text text, int start, int end) {
+  int len = end - start;
+
+  if (len > 0) {
+    array int piece = new int[len];
+
+    for (int i = 0; i < len; i = i + 1) {
+      piece[i] = text.chars[start + i];
+    }
+
+    string str = chars_to_string(piece, len);
+    print(str);
+    delete str;
+    delete piece;
+  }
+}
+
+function void print_char(int code) {
+  array int piece = new int[1];
+  piece[0] = code;
+  string str = chars_to_string(piece, 1);
+  print(str);
+  delete str;
+  delete piece;
+}
+
+// Reads all of stdin, with each line followed by a newline
+function Text read_all_input() {
+  Text source = text_new();
+  string line = input();
+
+  while (line != null) {
+    int len = length(line);
+
+    for (int i = 0; i < len; i = i + 1) {
+      text_push(source, char_code(line, i));
+    }
+
+    // 10 is a newline
+    text_push(source, 10);
+    delete line;
+    line = input();
+  }
+
+  return source;
+}

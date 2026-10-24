@@ -1,0 +1,70 @@
+// Token types. The values match the TokenType enum in Compiler/types.ts
+
+int TT_EOS = 0;
+int TT_ID = 1;
+int TT_COMMENT = 2;
+int TT_DOT = 3;
+int TT_COMMA = 4;
+int TT_LPAREN = 5;
+int TT_RPAREN = 6;
+int TT_LBRACKET = 7;
+int TT_RBRACKET = 8;
+int TT_SEMICOLON = 9;
+int TT_LBRACE = 10;
+int TT_RBRACE = 11;
+int TT_PLUS = 12;
+int TT_MINUS = 13;
+int TT_TIMES = 14;
+int TT_DIVIDE = 15;
+int TT_MOD = 16;
+int TT_ASSIGN = 17;
+int TT_AND = 18;
+int TT_OR = 19;
+int TT_NOT = 20;
+int TT_EQUAL = 21;
+int TT_NOT_EQUAL = 22;
+int TT_LESS = 23;
+int TT_LESS_EQ = 24;
+int TT_GREATER = 25;
+int TT_GREATER_EQ = 26;
+int TT_INT_VAL = 27;
+int TT_DOUBLE_VAL = 28;
+int TT_STRING_VAL = 29;
+int TT_BOOL_VAL = 30;
+int TT_NULL_VAL = 31;
+int TT_INT_TYPE = 32;
+int TT_DOUBLE_TYPE = 33;
+int TT_STRING_TYPE = 34;
+int TT_BOOL_TYPE = 35;
+int TT_VOID_TYPE = 36;
+int TT_STRUCT = 37;
+int TT_FUNCTION = 38;
+int TT_ARRAY = 39;
+int TT_FOR = 40;
+int TT_WHILE = 41;
+int TT_IF = 42;
+int TT_ELSEIF = 43;
+int TT_ELSE = 44;
+int TT_NEW = 45;
+int TT_RETURN = 46;
+int TT_IMPORT = 47;
+int TT_AS = 48;
+int TT_SCOPE_RESOLUTION = 49;
+int TT_DELETE = 50;
+int TT_EXPORT = 51;
+
+struct Token {
+  int type;
+  Text lexeme;
+  int line;
+  int column;
+}
+
+function Token token_new(int type, Text lexeme, int line, int column) {
+  return new Token(type, lexeme, line, column);
+}
+
+function void token_delete(Token token) {
+  text_delete(token.lexeme);
+  delete token;
+}

@@ -1,0 +1,30 @@
+// Reads MyPL source from stdin and prints one token per line as
+// "type line column lexeme"
+
+export function int main() {
+  Text source = read_all_input();
+  lexer_init(source);
+
+  Token token = lexer_next_token();
+
+  while (token.type != TT_EOS) {
+    print_token(token);
+    token_delete(token);
+    token = lexer_next_token();
+  }
+
+  print_token(token);
+  token_delete(token);
+  text_delete(source);
+}
+
+function void print_token(Token token) {
+  print(token.type);
+  print(" ");
+  print(token.line);
+  print(" ");
+  print(token.column);
+  print(" ");
+  text_print(token.lexeme);
+  print("\n");
+}

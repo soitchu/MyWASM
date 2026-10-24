@@ -1,151 +1,377 @@
-import "StringBuffer.mypl" as StringBuffer;
+// Port of Compiler/Lexer.ts. Characters are character codes, and -1 is EOF.
+// Note: `and`/`or` don't short-circuit, so array reads are guarded by
+// nested ifs rather than combined conditions
 
-int column = 1;
-int line  = 1;
-string in_stream = null;
-string lexeme = null;
-string token_type = null;
+// -1, set in lexer_init since globals can only start as literals
+int CH_EOF = 0;
 
-function void read() {
-    if(lexeme != null) {
-        delete lexeme;
-    }
-    column = column + 1;
-    lexeme = StringBuffer::read_char(); 
+Text lexer_source = null;
+int lexer_index = 0;
+int lexer_column = 1;
+int lexer_line = 1;
+
+// The lexeme of the token being built, and its type
+Text lexer_lexeme = null;
+int lexer_token_type = 0;
+
+// The current character, like `lexeme` right after handle_whitespaces in
+// the TS lexer
+int lexer_ch = 0;
+
+function void lexer_init(Text source) {
+  CH_EOF = 0 - 1;
+  lexer_source = source;
+  lexer_index = 0;
+  lexer_column = 1;
+  lexer_line = 1;
 }
 
-function void peek() {
-    if(lexeme != null) {
-        delete lexeme;
-    }
-    lexeme = StringBuffer::peek_char();
+function int lexer_read() {
+  lexer_column = lexer_column + 1;
+
+  if (lexer_index >= lexer_source.length) {
+    return CH_EOF;
+  }
+
+  int code = lexer_source.chars[lexer_index];
+  lexer_index = lexer_index + 1;
+  return code;
 }
 
-function bool isNumeric(string str) {
-    if (str == null) {
-        return false;
-    }
+function int lexer_peek() {
+  if (lexer_index >= lexer_source.length) {
+    return CH_EOF;
+  }
 
-    // this can be optimized
-    string char = get(str, 0);
-    int charCode = stoi(char) + 48;
-    delete char;
-    return (charCode >= 48) and (charCode <= 57);
+  return lexer_source.chars[lexer_index];
 }
 
-function bool isAlpha(string str) {
-    if (str == null) {
-        return false;
-    }
-
-    // this can be optimized
-    int charCode = stoi(str) + 48;
-    return ((charCode >= 65) and (charCode <= 90)) or ((charCode >= 97) and (charCode <= 122));
+function bool is_numeric(int code) {
+  return (code >= 48) and (code <= 57);
 }
 
-function bool isSpace(string str) {
-    if (str == null) {
-        return false;
-    }
-
-    int charCode = stoi(str) + 48;
-    // Space = 32, tab = 9
-    bool result = ((charCode == 32) or (charCode == 9) or isNewLine(str));
-
-    return result;
+function bool is_alpha(int code) {
+  return ((code >= 65) and (code <= 90)) or ((code >= 97) and (code <= 122));
 }
 
-function bool isNewLine(string str) {
-    if (str == null) {
-        return false;
-    }
-
-    // this can be optimized
-    int charCode = stoi(str) + 48;
-
-    // CR = 13, LF = 10
-    return ((charCode == 13) or (charCode == 10));
+function bool is_new_line(int code) {
+  // CR = 13, LF = 10
+  return (code == 13) or (code == 10);
 }
 
-function bool is_valid_id(string str) {
-    if (str == null) {
-        return false;
-    }
+function bool is_space(int code) {
+  // Space = 32, tab = 9
+  return (code == 32) or (code == 9) or is_new_line(code);
+}
 
-    // this can be optimized
-    int charCode = stoi(str) + 48;
-    return isAlpha(str) or (charCode == 95) or isNumeric(str);
+function bool is_valid_id(int code) {
+  // 95 is an underscore
+  return is_alpha(code) or (code == 95) or is_numeric(code);
+}
+
+function void lexer_error_start() {
+  print("Lexer error (line ");
+  print(lexer_line);
+  print(", column ");
+  print(lexer_column);
+  print("): ");
+}
+
+function void lexer_error(string message) {
+  lexer_error_start();
+  print(message);
+  print("\n");
+  error("");
+}
+
+// For messages like "IDs can't begin with 'x'"
+function void lexer_error_with_char(string before, int code, string after) {
+  lexer_error_start();
+  print(before);
+  print_char(code);
+  print(after);
+  print("\n");
+  error("");
+}
+
+function void lexer_set_lexeme(string str) {
+  text_delete(lexer_lexeme);
+  lexer_lexeme = text_from_string(str);
 }
 
 function void handle_whitespaces() {
-    peek();
-    while (isSpace(lexeme)) {
-        // Since we know that the character is
-        // a whitespace, we can eliminate it
-        read();
+  lexer_ch = lexer_peek();
 
-        // If it's a new line, we must reset the 
-        // column number and increment column number
-        if (isNewLine(lexeme)) {
-            column = 0;
-            line = line + 1;
-        }
+  while (is_space(lexer_ch)) {
+    // Since we know that the character is
+    // a whitespace, we can eliminate it
+    lexer_read();
 
-        peek();
+    // If it's a new line, we must reset the
+    // column number and increment the line number
+    if (is_new_line(lexer_ch)) {
+      lexer_column = 0;
+      lexer_line = lexer_line + 1;
     }
 
-    read();
+    lexer_ch = lexer_peek();
+  }
+
+  lexer_ch = lexer_read();
 }
 
 function void handle_comments() {
-    // if the next char is also /,
-    // then it is actually a comment
-    peek();
-    // string nextCh = lexeme;
-    string SLASH = "/";
-    string SEMI = ";";
-    string comment = "";
+  // if the next char is also /,
+  // then it is actually a comment
 
+  // 47 is a slash
+  if (lexer_peek() == 47) {
+    lexer_set_lexeme("");
+    lexer_token_type = TT_COMMENT;
 
-    // if (string_compare(SLASH, nextCh)) {
-    //     lexeme = "";
-    //     // // this.token_type = TokenType.COMMENT;
+    // remove the next / that's part of
+    // the comment
+    lexer_read();
 
-    //     // // remove the next / that's part of 
-    //     // // the comment
-    //     read();
-    //     peek();
+    int next_ch = lexer_peek();
 
-    //     // print("---");
-
-    //     // // Since we don't support multiline comments
-    //     // // we should stop when we read a newline or EOF
-    //     // // TODO: add eof back
-    //     // while ((lexeme != null) and (not string_compare(SEMI, lexeme)) and (not isNewLine(lexeme))) {
-    //     //     print(lexeme);
-    //     //     read();
-    //     //     string_append(comment, lexeme);
-    //     // }
-    // }
-
-    // print(comment);
-    delete SLASH;
-    delete SEMI;
-    delete comment;
-    delete lexeme;
-    lexeme = null;
-
+    // Since we don't support multiline comments
+    // we should stop when we read a newline or EOF
+    while ((not is_new_line(next_ch)) and (next_ch != CH_EOF)) {
+      lexer_read();
+      text_push(lexer_lexeme, next_ch);
+      next_ch = lexer_peek();
+    }
+  } else {
+    lexer_token_type = TT_DIVIDE;
+  }
 }
 
+function void handle_strings() {
+  int next_ch = lexer_peek();
 
-export function int main() {
-    for(int i = 0; i < 100; i = i + 1) {
-        print("----");
+  lexer_token_type = TT_STRING_VAL;
+  lexer_set_lexeme("");
+
+  // 34 is a double quote
+  while ((next_ch != 34) and (next_ch != CH_EOF) and (not is_new_line(next_ch))) {
+    lexer_read();
+    text_push(lexer_lexeme, next_ch);
+    next_ch = lexer_peek();
+  }
+
+  if (next_ch == 34) {
+    lexer_read();
+  } else {
+    lexer_error("String wasn't terminated");
+  }
+}
+
+function void handle_ambiguous_tokens() {
+  // 61 is =, 33 is !, 62 is >, 60 is <
+  int first = lexer_ch;
+  bool has_equal = false;
+
+  if (lexer_peek() == 61) {
+    text_push(lexer_lexeme, lexer_read());
+    has_equal = true;
+  } elseif (first == 33) {
+    lexer_error("Unexpected token '!'");
+  }
+
+  if (first == 61) {
+    if (has_equal) {
+      lexer_token_type = TT_EQUAL;
+    } else {
+      lexer_token_type = TT_ASSIGN;
     }
-    // string code = "//    int a = 10;";
-    // StringBuffer::ini(code);
+  } elseif (first == 33) {
+    lexer_token_type = TT_NOT_EQUAL;
+  } elseif (first == 62) {
+    if (has_equal) {
+      lexer_token_type = TT_GREATER_EQ;
+    } else {
+      lexer_token_type = TT_GREATER;
+    }
+  } else {
+    if (has_equal) {
+      lexer_token_type = TT_LESS_EQ;
+    } else {
+      lexer_token_type = TT_LESS;
+    }
+  }
+}
 
-    // handle_comments();
+function void handle_numeric_literals() {
+  int next_ch = lexer_peek();
+  lexer_token_type = TT_INT_VAL;
 
-    // StringBuffer::close();
+  // 46 is a decimal point
+  bool is_double = next_ch == 46;
+
+  // if it is a double, then eliminate the
+  // decimal point, and add it to the lexeme
+  if (is_double) {
+    text_push(lexer_lexeme, lexer_read());
+    next_ch = lexer_peek();
+  }
+
+  while (is_numeric(next_ch)) {
+    lexer_read();
+    text_push(lexer_lexeme, next_ch);
+    next_ch = lexer_peek();
+
+    if (next_ch == 46) {
+      // Making sure doubles can't have multiple
+      // decimal points
+      if (is_double) {
+        lexer_error("Doubles can't have multiple decimal points");
+      }
+
+      is_double = true;
+      text_push(lexer_lexeme, lexer_read());
+      next_ch = lexer_peek();
+    }
+  }
+
+  // The TS lexer also checks lexeme[-1] == "." here, but that is always
+  // undefined in JS, so "1." is accepted there. It's accepted here too
+  int first = lexer_lexeme.chars[0];
+
+  if ((lexer_lexeme.length > 1) and (first == 48) and (not is_double)) {
+    lexer_error("Ints can't have leading 0s");
+  } elseif (is_double and (first == 48)) {
+    if (lexer_lexeme.chars[1] != 46) {
+      lexer_error("Doubles can't have leading 0s");
+    }
+  }
+
+  if (is_double) {
+    lexer_token_type = TT_DOUBLE_VAL;
+  }
+}
+
+function int keyword_type(Text lexeme) {
+  if (text_equals_string(lexeme, "null")) { return TT_NULL_VAL; }
+  if (text_equals_string(lexeme, "true")) { return TT_BOOL_VAL; }
+  if (text_equals_string(lexeme, "false")) { return TT_BOOL_VAL; }
+  if (text_equals_string(lexeme, "int")) { return TT_INT_TYPE; }
+  if (text_equals_string(lexeme, "double")) { return TT_DOUBLE_TYPE; }
+  if (text_equals_string(lexeme, "string")) { return TT_STRING_TYPE; }
+  if (text_equals_string(lexeme, "bool")) { return TT_BOOL_TYPE; }
+  if (text_equals_string(lexeme, "void")) { return TT_VOID_TYPE; }
+  if (text_equals_string(lexeme, "and")) { return TT_AND; }
+  if (text_equals_string(lexeme, "or")) { return TT_OR; }
+  if (text_equals_string(lexeme, "not")) { return TT_NOT; }
+  if (text_equals_string(lexeme, "if")) { return TT_IF; }
+  if (text_equals_string(lexeme, "elseif")) { return TT_ELSEIF; }
+  if (text_equals_string(lexeme, "else")) { return TT_ELSE; }
+  if (text_equals_string(lexeme, "while")) { return TT_WHILE; }
+  if (text_equals_string(lexeme, "for")) { return TT_FOR; }
+  if (text_equals_string(lexeme, "return")) { return TT_RETURN; }
+  if (text_equals_string(lexeme, "struct")) { return TT_STRUCT; }
+  if (text_equals_string(lexeme, "array")) { return TT_ARRAY; }
+  if (text_equals_string(lexeme, "new")) { return TT_NEW; }
+  if (text_equals_string(lexeme, "function")) { return TT_FUNCTION; }
+  if (text_equals_string(lexeme, "import")) { return TT_IMPORT; }
+  if (text_equals_string(lexeme, "as")) { return TT_AS; }
+  if (text_equals_string(lexeme, "delete")) { return TT_DELETE; }
+  if (text_equals_string(lexeme, "export")) { return TT_EXPORT; }
+
+  return TT_ID;
+}
+
+function void handle_keywords_ids() {
+  int next_ch = lexer_peek();
+
+  if (not is_alpha(lexer_ch)) {
+    lexer_error_with_char("IDs can't begin with '", lexer_ch, "'");
+  }
+
+  while (is_valid_id(next_ch)) {
+    lexer_read();
+    text_push(lexer_lexeme, next_ch);
+    next_ch = lexer_peek();
+  }
+
+  lexer_token_type = keyword_type(lexer_lexeme);
+}
+
+// Returns the token type for characters that are a token by themselves,
+// or -1 otherwise
+function int single_char_type(int code) {
+  if (code == 46) { return TT_DOT; }
+  if (code == 59) { return TT_SEMICOLON; }
+  if (code == 44) { return TT_COMMA; }
+  if (code == 43) { return TT_PLUS; }
+  if (code == 37) { return TT_MOD; }
+  if (code == 45) { return TT_MINUS; }
+  if (code == 42) { return TT_TIMES; }
+  if (code == 40) { return TT_LPAREN; }
+  if (code == 41) { return TT_RPAREN; }
+  if (code == 91) { return TT_LBRACKET; }
+  if (code == 93) { return TT_RBRACKET; }
+  if (code == 123) { return TT_LBRACE; }
+  if (code == 125) { return TT_RBRACE; }
+
+  return 0 - 1;
+}
+
+function bool is_ambiguous_start(int code) {
+  // > < = !
+  return (code == 62) or (code == 60) or (code == 61) or (code == 33);
+}
+
+// Returns the next token in the lexer's input stream
+function Token lexer_next_token() {
+  // Getting rid of whitespaces
+  handle_whitespaces();
+
+  // These must be assigned after eliminating
+  // the whitespace, to make sure the
+  // the line/column number is right
+  int ini_column = lexer_column;
+  int ini_line = lexer_line;
+
+  lexer_lexeme = text_new();
+  lexer_token_type = 0 - 1;
+
+  if (lexer_ch == CH_EOF) {
+    lexer_token_type = TT_EOS;
+  } else {
+    text_push(lexer_lexeme, lexer_ch);
+    int single_type = single_char_type(lexer_ch);
+
+    if (single_type != (0 - 1)) {
+      // These include tokens that can be directly mapped
+      // by just looking at one character (which includes
+      // some operators and punctuations)
+      lexer_token_type = single_type;
+    } elseif (is_numeric(lexer_ch)) {
+      // Numeric tokens (int / double)
+      handle_numeric_literals();
+    } elseif (lexer_ch == 47) {
+      // Potentially a comment or a divide symbol
+      handle_comments();
+    } elseif (lexer_ch == 34) {
+      // This will error if the string wasn't terminated
+      handle_strings();
+    } elseif (is_ambiguous_start(lexer_ch)) {
+      // This will error if there's a stray "!"
+      handle_ambiguous_tokens();
+    } elseif (lexer_ch == 58) {
+      // 58 is a colon
+      if (lexer_read() == 58) {
+        lexer_token_type = TT_SCOPE_RESOLUTION;
+      } else {
+        lexer_error("Was expecting the scope resolution operator");
+      }
+    } else {
+      // If it's none of the things above, then it must
+      // be a keyword or an identifier
+      handle_keywords_ids();
+    }
+  }
+
+  return token_new(lexer_token_type, lexer_lexeme, ini_line, ini_column);
 }

@@ -1,195 +1,130 @@
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// Compares the native lexer (Compiler-WASM) with the TS lexer token by token
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterAll, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import * as Compiler from "../../Compiler/index.ts";
+import { Lexer } from "../../Compiler/Lexer";
+import { StringBuffer } from "../../Compiler/StringBuffer";
+import { MyWASMError, TokenType } from "../../Compiler/types";
+import { buildStage } from "../../Compiler-WASM/build";
 
-const NATIVE_DIR = path.join(__dirname, "../../Compiler-WASM");
+const ROOT = path.join(__dirname, "../..");
 const workDir = mkdtempSync(path.join(tmpdir(), "native-lexer-"));
+const lexerWasm = path.join(workDir, "lex.wasm");
 
-copyFileSync(
-  path.join(NATIVE_DIR, "StringBuffer.mypl"),
-  path.join(workDir, "StringBuffer.mypl")
-);
+beforeAll(async () => {
+  const source = path.join(workDir, "lex.mypl");
+  buildStage("lex", source);
 
-// Lexer.mypl without its main function, so tests can supply their own
-const lexerSource = readFileSync(path.join(NATIVE_DIR, "Lexer.mypl"), "utf8")
-  .split("export function int main()")[0];
+  await Compiler.init(source, lexerWasm, {
+    O: 0,
+    S: 0,
+    fastMath: false,
+    returnBuffer: false,
+    unsafeArray: false,
+  });
+});
 
 afterAll(() => rmSync(workDir, { recursive: true, force: true }));
 
-// Runs `main` with the lexer's functions in scope. Runs in a separate process
-// so a program that hangs fails the test instead of the whole suite
-function runWithLexer(name: string, main: string) {
-  const file = path.join(workDir, `${name}.mypl`);
-  writeFileSync(file, lexerSource + "\nexport function int main() {\n" + main + "\n}\n");
+// The native lexer reads stdin line by line and ends every line with a
+// newline, so the TS lexer gets the same text
+function normalize(code: string) {
+  return code === "" || code.endsWith("\n") ? code : code + "\n";
+}
 
+function tsTokens(code: string) {
+  const lexer = new Lexer(new StringBuffer(normalize(code)));
+  let output = "";
+
+  try {
+    while (true) {
+      const token = lexer.next_token();
+      output += `${token.token_type} ${token.line} ${token.column} ${token.lexeme}\n`;
+
+      if (token.token_type === TokenType.EOS) {
+        return output;
+      }
+    }
+  } catch (e) {
+    const error = e as MyWASMError;
+    return output + `Lexer error (line ${error.line}, column ${error.column}): ${error.message}\n`;
+  }
+}
+
+function nativeTokens(code: string) {
   const result = Bun.spawnSync({
-    cmd: [process.execPath, path.join(__dirname, "run.ts"), file],
-    timeout: 10_000,
+    cmd: [process.execPath, path.join(ROOT, "index.ts"), "run", lexerWasm],
+    stdin: Buffer.from(code),
+    timeout: 20_000,
   });
 
   const stdout = result.stdout.toString();
+  const failed = result.exitCode !== 0;
 
-  if (result.exitCode !== 0 || !stdout.includes("\0")) {
-    throw new Error(
-      `${name} exited with ${result.exitCode ?? result.signalCode}: ` +
-        result.stderr
-          .toString()
-          .split("\n")
-          .filter((line) => /error/i.test(line) && line.length < 300)
-          .join("\n")
-    );
+  // A lexer error prints its message and then traps
+  if (failed && !stdout.includes("Lexer error")) {
+    throw new Error(`Native lexer crashed:\n${result.stderr.toString().slice(-2000)}`);
   }
 
-  return stdout.slice(stdout.indexOf("\0") + 1);
+  return stdout;
 }
 
-// Use-after-free
+function expectSameTokens(code: string) {
+  expect(nativeTokens(code)).toBe(tsTokens(code));
+}
 
-test("is_valid_id_keeps_its_argument", () => {
-  const output = runWithLexer("is_valid_id", `
-    string code = "ab";
-    StringBuffer::ini(code);
-    read();
-    print(is_valid_id(lexeme));
-    print(lexeme);
-    read();
-    print(lexeme);
-  `);
+describe("repo files", () => {
+  const files = Bun.spawnSync({ cmd: ["git", "ls-files", "*.mypl"], cwd: ROOT })
+    .stdout.toString()
+    .trim()
+    .split("\n");
 
-  expect(output).toBe("trueab");
+  for (const file of files) {
+    test(file, () => {
+      expectSameTokens(readFileSync(path.join(ROOT, file), "utf8"));
+    });
+  }
 });
 
-test("isNumeric_keeps_its_argument", () => {
-  const output = runWithLexer("isNumeric", `
-    string s = "5";
-    print(isNumeric(s));
-    print(s);
-    print(isNumeric(s));
-  `);
+describe("snippets", () => {
+  const snippets: Record<string, string> = {
+    empty: "",
+    only_whitespace: "   \t  \n\n  ",
+    operators: "a==b!=c<=d>=e<f>g=h",
+    arithmetic: "a+b-c*d/e%f",
+    punctuation: "(a,b)[c].d;{e}",
+    scope_resolution: "Lib::f(x);",
+    comment_then_code: "x // comment here\ny",
+    comment_at_eof: "x // no newline after",
+    divide_not_comment: "a / b",
+    string_literal: 'print("hello world");',
+    string_with_backslash: 'print("a\\nb");',
+    ints_and_doubles: "0 7 120 0.5 3.25 10.0",
+    double_without_fraction: "1.",
+    dot_then_digits: ".5",
+    keywords:
+      "null true false int double string bool void and or not if elseif else while for return struct array new function import as delete export",
+    identifiers: "a abc a_b a1 B2c",
+    crlf: "int a;\r\nint b;\r\n",
+    tabs: "\tint\ta;",
+    unicode_in_string: 'print("héllo");',
+    // Errors
+    stray_bang: "a ! b",
+    single_colon: "a : b",
+    unterminated_string: 'print("abc',
+    newline_in_string: 'print("abc\ndef");',
+    multiple_decimal_points: "1.2.3",
+    int_leading_zero: "007",
+    double_leading_zero: "00.5",
+    id_starting_with_underscore: "_abc",
+    unexpected_character: "a @ b",
+  };
 
-  expect(output).toBe("true5true");
-});
-
-test("handle_comments_clears_lexeme", () => {
-  const output = runWithLexer("handle_comments", `
-    string code = "// hi";
-    StringBuffer::ini(code);
-    read();
-    handle_comments();
-    print(lexeme == null);
-    read();
-    print(lexeme);
-  `);
-
-  expect(output).toBe("true/");
-});
-
-// EOF
-
-test("is_eof", () => {
-  const output = runWithLexer("is_eof", `
-    string code = "a";
-    StringBuffer::ini(code);
-    print(StringBuffer::is_eof());
-    read();
-    print(StringBuffer::is_eof());
-  `);
-
-  expect(output).toBe("falsetrue");
-});
-
-test("is_eof_on_empty_input", () => {
-  const output = runWithLexer("is_eof_empty", `
-    string code = "";
-    StringBuffer::ini(code);
-    print(StringBuffer::is_eof());
-  `);
-
-  expect(output).toBe("true");
-});
-
-test("read_past_eof_gives_null", () => {
-  const output = runWithLexer("read_past_eof", `
-    string code = "a";
-    StringBuffer::ini(code);
-    read();
-    print(lexeme);
-    read();
-    print(lexeme == null);
-    read();
-    print(lexeme == null);
-  `);
-
-  expect(output).toBe("atruetrue");
-});
-
-test("peek_at_eof_gives_null", () => {
-  const output = runWithLexer("peek_at_eof", `
-    string code = "";
-    StringBuffer::ini(code);
-    peek();
-    print(lexeme == null);
-  `);
-
-  expect(output).toBe("true");
-});
-
-test("whitespace_before_char", () => {
-  const output = runWithLexer("whitespace_before_char", `
-    string code = "   b";
-    StringBuffer::ini(code);
-    handle_whitespaces();
-    print(lexeme);
-  `);
-
-  expect(output).toBe("b");
-});
-
-test("trailing_whitespace_reaches_eof", () => {
-  const output = runWithLexer("trailing_whitespace", `
-    string code = "a  ";
-    StringBuffer::ini(code);
-    read();
-    handle_whitespaces();
-    print(lexeme == null);
-  `);
-
-  expect(output).toBe("true");
-});
-
-test("only_whitespace_reaches_eof", () => {
-  const output = runWithLexer("only_whitespace", `
-    string code = "   ";
-    StringBuffer::ini(code);
-    handle_whitespaces();
-    print(lexeme == null);
-    print(StringBuffer::is_eof());
-  `);
-
-  expect(output).toBe("truetrue");
-});
-
-test("whitespace_on_empty_input", () => {
-  const output = runWithLexer("whitespace_empty", `
-    string code = "";
-    StringBuffer::ini(code);
-    handle_whitespaces();
-    print(lexeme == null);
-  `);
-
-  expect(output).toBe("true");
-});
-
-test("helpers_handle_null", () => {
-  const output = runWithLexer("helpers_null", `
-    string s = null;
-    print(isSpace(s));
-    print(isNewLine(s));
-    print(isNumeric(s));
-    print(isAlpha(s));
-    print(is_valid_id(s));
-  `);
-
-  expect(output).toBe("falsefalsefalsefalsefalse");
+  for (const [name, code] of Object.entries(snippets)) {
+    test(name, () => {
+      expectSameTokens(code);
+    });
+  }
 });
