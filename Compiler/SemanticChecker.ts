@@ -1471,6 +1471,12 @@ export class SemanticChecker extends Visitor{
         }
 
         this.curr_type = func_info.return_type
+
+        // The result of a call statement is unused, and leaving it on the
+        // stack makes the enclosing block invalid
+        if(call_expr.is_stmt && func_info.return_type.type_name.token_type !== ast.TokenType.VOID_TYPE){
+            this.output_in_new_line("drop")
+        }
     }
 
 

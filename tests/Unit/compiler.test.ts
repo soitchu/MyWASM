@@ -1114,3 +1114,71 @@ test("nested_for_with_empty_inner", async () => {
 
   expect(result).toBe(3);
 });
+
+test("discarded_call_result_in_if", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    function int bump(array int counter) {
+      counter[0] = counter[0] + 1;
+      return counter[0];
+    }
+
+    export function int test() {
+      array int counter = new int[1];
+      if (true) {
+        bump(counter);
+      }
+      return counter[0];
+    }
+  `);
+
+  expect(result).toBe(1);
+});
+
+test("discarded_call_result_in_loops", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    function int bump(array int counter) {
+      counter[0] = counter[0] + 1;
+      return counter[0];
+    }
+
+    export function int test() {
+      array int counter = new int[1];
+      for (int i = 0; i < 3; i = i + 1) {
+        bump(counter);
+      }
+      while (counter[0] < 5) {
+        bump(counter);
+      }
+      bump(counter);
+      return counter[0];
+    }
+  `);
+
+  expect(result).toBe(6);
+});
+
+test("discarded_double_and_struct_results", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    struct Box {
+      int v;
+    }
+
+    function double half(int x) {
+      return itod(x) / 2.0;
+    }
+
+    function Box make(int v) {
+      return new Box(v);
+    }
+
+    export function int test() {
+      if (true) {
+        half(3);
+        make(4);
+      }
+      return 7;
+    }
+  `);
+
+  expect(result).toBe(7);
+});

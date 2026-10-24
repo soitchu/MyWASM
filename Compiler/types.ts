@@ -171,6 +171,8 @@ export class CallExpr {
     fun_name: Token
     args: Expr[]
     namespace: Token | undefined
+    // True when the call is a statement, so its result is unused
+    is_stmt = false
 
     constructor(fun_name: Token, args: Expr[], namespace: Token | undefined) {
         this.fun_name = fun_name;

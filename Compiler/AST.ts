@@ -616,7 +616,9 @@ export class ASTParser {
             id_token.lexeme = this.get_name_with_prefix(id_token.lexeme);
           }
 
-          stmts.push(this.call_expr(id_token, namespace));
+          const call_stmt = this.call_expr(id_token, namespace);
+          call_stmt.is_stmt = true;
+          stmts.push(call_stmt);
           this.eat(
             ast.TokenType.SEMICOLON,
             "(17) Call expressions must be followed by a semicolon, but"
