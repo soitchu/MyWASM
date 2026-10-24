@@ -1055,3 +1055,62 @@ test("deleting_contiguous_memory_non_seq_not_next_to_globa_offset_and_realloc", 
   expect(intArray[12]).toBe(5);
   expect(intArray[18]).toBe(5);
 });
+
+test("for_with_false_condition_never_runs", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    export function int test() {
+      int count = 0;
+      for (int i = 0; i < 0; i = i + 1) {
+        count = count + 1;
+      }
+      return count;
+    }
+  `);
+
+  expect(result).toBe(0);
+});
+
+test("for_runs_n_times", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    export function int test() {
+      int count = 0;
+      for (int i = 0; i < 5; i = i + 1) {
+        count = count + 1;
+      }
+      return count;
+    }
+  `);
+
+  expect(result).toBe(5);
+});
+
+test("for_over_empty_array", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    export function int test() {
+      array int arr = new int[0];
+      int sum = 0;
+      for (int i = 0; i < length(arr); i = i + 1) {
+        sum = sum + arr[i];
+      }
+      return sum;
+    }
+  `);
+
+  expect(result).toBe(0);
+});
+
+test("nested_for_with_empty_inner", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    export function int test() {
+      int count = 0;
+      for (int i = 0; i < 3; i = i + 1) {
+        for (int j = 0; j < i; j = j + 1) {
+          count = count + 1;
+        }
+      }
+      return count;
+    }
+  `);
+
+  expect(result).toBe(3);
+});

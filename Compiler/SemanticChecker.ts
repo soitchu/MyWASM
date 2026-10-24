@@ -320,6 +320,36 @@ export class SemanticChecker extends Visitor{
                 ],
                 []
             ),
+            "char_code": new ast.FunDef(
+                WASM.DATA_TYPES["int"],
+                ast.Token(ast.TokenType.ID, "char_code", 0, 0),
+                [
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["string"],
+                        ast.Token(ast.TokenType.ID, "value_", 0, 0)
+                    ),
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["int"],
+                        ast.Token(ast.TokenType.ID, "value", 0, 0)
+                    ),
+                ],
+                []
+            ),
+            "chars_to_string": new ast.FunDef(
+                WASM.DATA_TYPES["string"],
+                ast.Token(ast.TokenType.ID, "chars_to_string", 0, 0),
+                [
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["array_int"],
+                        ast.Token(ast.TokenType.ID, "value_", 0, 0)
+                    ),
+                    new ast.VarDef(
+                        WASM.DATA_TYPES["int"],
+                        ast.Token(ast.TokenType.ID, "value", 0, 0)
+                    ),
+                ],
+                []
+            ),
             "get": new ast.FunDef(
                 WASM.DATA_TYPES["string"],
                 ast.Token(ast.TokenType.ID, "get", 0, 0),
@@ -1267,13 +1297,9 @@ export class SemanticChecker extends Visitor{
         const current_loop_count = this.loop_count
         this.output_in_new_line(`(loop \$loop${current_loop_count}`)
         this.indent += 1
-        
-        for(const stmt of for_stmt.stmts){
-            stmt.accept(this)
-        }
-            
-        for_stmt.assign_stmt.accept(this)
-        
+
+        // The condition is checked before the body, so the body
+        // doesn't run when the condition is false to begin with
         this.curr_type = undefined
         for_stmt.condition.accept(this)
         const curr_type = this.get_curr_token(45, this.get_first_rvalue_token(for_stmt.condition))
@@ -1282,7 +1308,19 @@ export class SemanticChecker extends Visitor{
             this.error(`(15) for's condition must be a boolean expression/value, but got \"${this.type_to_string(curr_type)}\"`, this.get_first_rvalue_token(for_stmt.condition))
         }
 
-        this.output_in_new_line(`br_if $loop${current_loop_count}`)
+        this.output_in_new_line("if")
+        this.indent += 1
+
+        for(const stmt of for_stmt.stmts){
+            stmt.accept(this)
+        }
+
+        for_stmt.assign_stmt.accept(this)
+
+        this.output_in_new_line(`br \$loop${current_loop_count}`)
+
+        this.indent -= 1
+        this.output_in_new_line("end")
         this.indent -= 1
         this.output_in_new_line(")")
         this.symbol_table.pop_environment()

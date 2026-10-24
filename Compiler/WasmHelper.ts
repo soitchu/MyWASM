@@ -28,7 +28,9 @@ export const BUILT_INS = [
   "length_string",
   "string_print",
   "string_append",
-  "string_compare"
+  "string_compare",
+  "char_code",
+  "chars_to_string"
 ];
 
 const token_to_op: { [key: number]: string | Object } = {};

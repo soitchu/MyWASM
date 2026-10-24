@@ -225,6 +225,32 @@ function String get(String str, int index) {
   return main_string_ini_unpooled(result);
 }
 
+// Returns the character code at index, following concatenated parts like get
+function int char_code(String str, int index) {
+  while((index >= str.length) and (str.next != null)) {
+    index = index - str.length;
+    str = str.next;
+  }
+
+  if(index >= str.length) {
+    error("");
+  }
+
+  return str.value[index];
+}
+
+// Makes a string from the first len codes in chars. The codes are copied,
+// so chars can be changed or deleted afterwards
+function String chars_to_string(array int chars, int len) {
+  array int value = new int[len];
+
+  for(int i = 0; i < len; i = i + 1) {
+    value[i] = chars[i];
+  }
+
+  return new String(value, len, null, false);
+}
+
 function int stoi(String s) {
   String current = s;
   int val = 0;
