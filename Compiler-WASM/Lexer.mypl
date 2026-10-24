@@ -22,21 +22,32 @@ function void peek() {
 }
 
 function bool isNumeric(string str) {
+    if (str == null) {
+        return false;
+    }
+
     // this can be optimized
     string char = get(str, 0);
     int charCode = stoi(char) + 48;
     delete char;
-    delete str;
     return (charCode >= 48) and (charCode <= 57);
 }
 
 function bool isAlpha(string str) {
+    if (str == null) {
+        return false;
+    }
+
     // this can be optimized
     int charCode = stoi(str) + 48;
     return ((charCode >= 65) and (charCode <= 90)) or ((charCode >= 97) and (charCode <= 122));
 }
 
 function bool isSpace(string str) {
+    if (str == null) {
+        return false;
+    }
+
     int charCode = stoi(str) + 48;
     // Space = 32, tab = 9
     bool result = ((charCode == 32) or (charCode == 9) or isNewLine(str));
@@ -45,6 +56,10 @@ function bool isSpace(string str) {
 }
 
 function bool isNewLine(string str) {
+    if (str == null) {
+        return false;
+    }
+
     // this can be optimized
     int charCode = stoi(str) + 48;
 
@@ -53,6 +68,10 @@ function bool isNewLine(string str) {
 }
 
 function bool is_valid_id(string str) {
+    if (str == null) {
+        return false;
+    }
+
     // this can be optimized
     int charCode = stoi(str) + 48;
     return isAlpha(str) or (charCode == 95) or isNumeric(str);
@@ -114,6 +133,7 @@ function void handle_comments() {
     delete SEMI;
     delete comment;
     delete lexeme;
+    lexeme = null;
 
 }
 

@@ -13,14 +13,27 @@ function void ini(string code) {
     stream = code;
 }
     
+function bool is_eof() {
+    return index >= length(stream);
+}
+
 function string read_char(){
-    // Returns and removes a single character in stream.
+    // Returns and removes a single character in stream, or null at EOF.
+    if (is_eof()) {
+        return null;
+    }
+
     string char = get(stream, index);
     index = index + 1;
     return char;
 }
 
 function string peek_char(){
+    // Returns the next character without removing it, or null at EOF.
+    if (is_eof()) {
+        return null;
+    }
+
     return get(stream, index);
 }
 
