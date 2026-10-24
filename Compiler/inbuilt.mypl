@@ -155,6 +155,11 @@ function string itos(int a) {
     val = val / 10;
   }
 
+  // 0 has no digits in the loop above, but is still printed as "0"
+  if(a == 0) {
+    size = 1;
+  }
+
   if(is_neg) {
     size = size + 1;
   }
@@ -163,6 +168,10 @@ function string itos(int a) {
 
   if(is_neg) {
     result[0] = 45;
+  }
+
+  if(a == 0) {
+    result[0] = 48;
   }
 
   val = a;

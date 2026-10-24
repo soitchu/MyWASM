@@ -1,5 +1,28 @@
 import { MemoryManager } from "./MemoryManager.ts";
 import rl from "readline-sync";
+import { readFileSync } from "node:fs";
+
+let pipedLines: string[] | undefined;
+let pipedLineIndex = 0;
+
+// Reads a line from stdin. readline-sync only works with a TTY, so piped
+// stdin is read all at once and served line by line, with null at EOF
+function readLine(): string | null {
+    if (process.stdin.isTTY) {
+        return rl.question("");
+    }
+
+    if (pipedLines === undefined) {
+        const stdin = readFileSync(0, "utf8");
+        pipedLines = stdin === "" ? [] : stdin.split("\n");
+
+        if (stdin.endsWith("\n")) {
+            pipedLines.pop();
+        }
+    }
+
+    return pipedLineIndex < pipedLines.length ? pipedLines[pipedLineIndex++] : null;
+}
 
 
 export interface testWasmExports extends WebAssembly.Exports {
@@ -85,7 +108,12 @@ export async function ini(memory: WebAssembly.Memory, wasmModuleBuffer: Uint8Arr
             
             input: function () {
                 const exported = wasmModule.instance.exports as testWasmExports;
-                const input = rl.question("");
+                const input = readLine();
+
+                if (input === null) {
+                    return 0;
+                }
+
                 const stringPointer = exported.string_ini(input.length);
                 
                 for (let i = 0; i < input.length; i++) {
