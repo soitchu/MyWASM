@@ -154,3 +154,49 @@ function Text read_all_input() {
 
   return source;
 }
+
+struct TextList {
+  array Text items;
+  int length;
+}
+
+function TextList text_list_new() {
+  return new TextList(new Text[4], 0);
+}
+
+function void text_list_push(TextList list, Text item) {
+  if (list.length == length(list.items)) {
+    array Text old_items = list.items;
+    array Text new_items = new Text[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+function Text text_list_pop(TextList list) {
+  list.length = list.length - 1;
+  return list.items[list.length];
+}
+
+// Joins the texts in list with separator between them
+function Text text_list_join(TextList list, string separator) {
+  Text joined = text_new();
+
+  for (int i = 0; i < list.length; i = i + 1) {
+    if (i > 0) {
+      text_append_string(joined, separator);
+    }
+
+    text_append(joined, list.items[i]);
+  }
+
+  return joined;
+}

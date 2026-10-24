@@ -1,0 +1,9 @@
+// Reads MyPL source from stdin, parses it and prints the AST
+
+export function int main() {
+  Text source = read_all_input();
+  parser_init(source, "main", true);
+
+  Program program = parse();
+  dump_program(program);
+}

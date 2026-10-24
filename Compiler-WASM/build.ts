@@ -10,6 +10,15 @@ import path from "node:path";
 
 export const STAGES: Record<string, string[]> = {
   lex: ["Text.mypl", "Token.mypl", "Lexer.mypl", "drivers/lex.mypl"],
+  parse: [
+    "Text.mypl",
+    "Token.mypl",
+    "Lexer.mypl",
+    "Ast.mypl",
+    "Parser.mypl",
+    "AstDump.mypl",
+    "drivers/parse.mypl",
+  ],
 };
 
 export function buildStage(stage: string, output: string) {

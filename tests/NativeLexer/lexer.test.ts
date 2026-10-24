@@ -1,38 +1,17 @@
 // Compares the native lexer (Compiler-WASM) with the TS lexer token by token
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import * as Compiler from "../../Compiler/index.ts";
 import { Lexer } from "../../Compiler/Lexer";
 import { StringBuffer } from "../../Compiler/StringBuffer";
 import { MyWASMError, TokenType } from "../../Compiler/types";
-import { buildStage } from "../../Compiler-WASM/build";
+import { compileStage, normalize, readRepoFile, repoMyPLFiles, runStage } from "../native";
 
-const ROOT = path.join(__dirname, "../..");
-const workDir = mkdtempSync(path.join(tmpdir(), "native-lexer-"));
-const lexerWasm = path.join(workDir, "lex.wasm");
+let stage: Awaited<ReturnType<typeof compileStage>>;
 
 beforeAll(async () => {
-  const source = path.join(workDir, "lex.mypl");
-  buildStage("lex", source);
-
-  await Compiler.init(source, lexerWasm, {
-    O: 0,
-    S: 0,
-    fastMath: false,
-    returnBuffer: false,
-    unsafeArray: false,
-  });
+  stage = await compileStage("lex");
 });
 
-afterAll(() => rmSync(workDir, { recursive: true, force: true }));
-
-// The native lexer reads stdin line by line and ends every line with a
-// newline, so the TS lexer gets the same text
-function normalize(code: string) {
-  return code === "" || code.endsWith("\n") ? code : code + "\n";
-}
+afterAll(() => stage.cleanup());
 
 function tsTokens(code: string) {
   const lexer = new Lexer(new StringBuffer(normalize(code)));
@@ -53,37 +32,14 @@ function tsTokens(code: string) {
   }
 }
 
-function nativeTokens(code: string) {
-  const result = Bun.spawnSync({
-    cmd: [process.execPath, path.join(ROOT, "index.ts"), "run", lexerWasm],
-    stdin: Buffer.from(code),
-    timeout: 20_000,
-  });
-
-  const stdout = result.stdout.toString();
-  const failed = result.exitCode !== 0;
-
-  // A lexer error prints its message and then traps
-  if (failed && !stdout.includes("Lexer error")) {
-    throw new Error(`Native lexer crashed:\n${result.stderr.toString().slice(-2000)}`);
-  }
-
-  return stdout;
-}
-
 function expectSameTokens(code: string) {
-  expect(nativeTokens(code)).toBe(tsTokens(code));
+  expect(runStage(stage.wasm, code, ["Lexer error"])).toBe(tsTokens(code));
 }
 
 describe("repo files", () => {
-  const files = Bun.spawnSync({ cmd: ["git", "ls-files", "*.mypl"], cwd: ROOT })
-    .stdout.toString()
-    .trim()
-    .split("\n");
-
-  for (const file of files) {
+  for (const file of repoMyPLFiles()) {
     test(file, () => {
-      expectSameTokens(readFileSync(path.join(ROOT, file), "utf8"));
+      expectSameTokens(readRepoFile(file));
     });
   }
 });

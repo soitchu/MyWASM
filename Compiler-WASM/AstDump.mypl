@@ -1,0 +1,320 @@
+// Prints the AST as S-expressions, one statement per line. The tests
+// compare this with the same dump of the TS parser's AST
+// (tests/NativeParser/dump.ts), so the two must stay in sync
+
+function void dump_indent(int depth) {
+  for (int i = 0; i < depth; i = i + 1) {
+    print("  ");
+  }
+}
+
+function void dump_bool(bool value) {
+  if (value) {
+    print("1");
+  } else {
+    print("0");
+  }
+}
+
+// "lexeme"@line:column, or _ for no token
+function void dump_token(Token token) {
+  if (token == null) {
+    print("_");
+  } else {
+    print_char(34);
+    text_print(token.lexeme);
+    print_char(34);
+    print("@");
+    print(token.line);
+    print(":");
+    print(token.column);
+  }
+}
+
+function void dump_quoted(Text text) {
+  print_char(34);
+  text_print(text);
+  print_char(34);
+}
+
+function void dump_data_type(DataType data_type) {
+  print("(type ");
+  dump_bool(data_type.is_array);
+  print(" ");
+  dump_token(data_type.namespace);
+  print(" ");
+  dump_token(data_type.type_name);
+  print(")");
+}
+
+function void dump_var_def(VarDef var_def) {
+  print("(vardef ");
+  dump_data_type(var_def.data_type);
+  print(" ");
+  dump_token(var_def.var_name);
+  print(")");
+}
+
+function void dump_var_defs(VarDefList var_defs) {
+  print("(");
+
+  for (int i = 0; i < var_defs.length; i = i + 1) {
+    if (i > 0) {
+      print(" ");
+    }
+
+    dump_var_def(var_defs.items[i]);
+  }
+
+  print(")");
+}
+
+function void dump_expr_or_none(Expr e) {
+  if (e == null) {
+    print("_");
+  } else {
+    dump_expr(e);
+  }
+}
+
+function void dump_exprs(ExprList exprs) {
+  print("(");
+
+  for (int i = 0; i < exprs.length; i = i + 1) {
+    if (i > 0) {
+      print(" ");
+    }
+
+    dump_expr(exprs.items[i]);
+  }
+
+  print(")");
+}
+
+function void dump_expr(Expr e) {
+  print("(expr ");
+  dump_bool(e.not_op);
+  print(" ");
+  dump_term(e.first);
+  print(" ");
+  dump_token(e.op);
+  print(" ");
+  dump_expr_or_none(e.rest);
+  print(")");
+}
+
+function void dump_term(ExprTerm term) {
+  if (term.kind == TERM_SIMPLE) {
+    print("(simple ");
+    dump_rvalue(term.rvalue);
+  } else {
+    print("(complex ");
+    dump_expr(term.expr);
+  }
+
+  print(")");
+}
+
+function void dump_rvalue(RValue rvalue) {
+  if (rvalue.kind == RV_SIMPLE) {
+    print("(lit ");
+    dump_token(rvalue.value);
+    print(")");
+  } elseif (rvalue.kind == RV_NEW) {
+    NewRValue new_rvalue = rvalue.new_rvalue;
+
+    print("(new ");
+    dump_token(new_rvalue.namespace);
+    print(" ");
+    dump_token(new_rvalue.type_name);
+    print(" ");
+    dump_expr_or_none(new_rvalue.array_expr);
+    print(" ");
+
+    if (new_rvalue.struct_params == null) {
+      print("_");
+    } else {
+      dump_exprs(new_rvalue.struct_params);
+    }
+
+    print(")");
+  } elseif (rvalue.kind == RV_VAR) {
+    dump_var_rvalue(rvalue.var_rvalue);
+  } else {
+    dump_call_expr(rvalue.call_expr);
+  }
+}
+
+function void dump_var_refs(VarRefList path) {
+  print("(");
+
+  for (int i = 0; i < path.length; i = i + 1) {
+    if (i > 0) {
+      print(" ");
+    }
+
+    print("(ref ");
+    dump_token(path.items[i].var_name);
+    print(" ");
+    dump_expr_or_none(path.items[i].array_expr);
+    print(")");
+  }
+
+  print(")");
+}
+
+function void dump_var_rvalue(VarRValue var_rvalue) {
+  print("(var ");
+  dump_var_refs(var_rvalue.path);
+  print(")");
+}
+
+function void dump_call_expr(CallExpr call) {
+  print("(call ");
+  dump_bool(call.is_stmt);
+  print(" ");
+  dump_token(call.namespace);
+  print(" ");
+  dump_token(call.fun_name);
+  print(" ");
+  dump_exprs(call.args);
+  print(")");
+}
+
+function void dump_var_decl(VarDecl var_decl) {
+  print("(vardecl ");
+  dump_var_def(var_decl.var_def);
+  print(" ");
+  dump_expr_or_none(var_decl.expr);
+  print(")");
+}
+
+function void dump_assign_stmt(AssignStmt assign) {
+  print("(assign ");
+  dump_var_refs(assign.lvalue);
+  print(" ");
+  dump_expr(assign.expr);
+  print(")");
+}
+
+function void dump_stmts(StmtList stmts, int depth) {
+  for (int i = 0; i < stmts.length; i = i + 1) {
+    dump_stmt(stmts.items[i], depth);
+  }
+}
+
+function void dump_stmt(Stmt s, int depth) {
+  dump_indent(depth);
+
+  if (s.kind == STMT_VAR_DECL) {
+    dump_var_decl(s.var_decl);
+    print("\n");
+  } elseif (s.kind == STMT_ASSIGN) {
+    dump_assign_stmt(s.assign_stmt);
+    print("\n");
+  } elseif (s.kind == STMT_RETURN) {
+    print("(return ");
+    dump_expr(s.expr);
+    print(")\n");
+  } elseif (s.kind == STMT_DELETE) {
+    print("(delete ");
+    dump_var_rvalue(s.delete_target);
+    print(")\n");
+  } elseif (s.kind == STMT_CALL) {
+    dump_call_expr(s.call_expr);
+    print("\n");
+  } elseif (s.kind == STMT_WHILE) {
+    print("(while ");
+    dump_expr(s.while_stmt.condition);
+    print("\n");
+    dump_stmts(s.while_stmt.stmts, depth + 1);
+    dump_indent(depth);
+    print(")\n");
+  } elseif (s.kind == STMT_FOR) {
+    ForStmt for_stmt = s.for_stmt;
+
+    print("(for ");
+    dump_var_decl(for_stmt.var_decl);
+    print(" ");
+    dump_expr(for_stmt.condition);
+    print(" ");
+    dump_assign_stmt(for_stmt.assign_stmt);
+    print("\n");
+    dump_stmts(for_stmt.stmts, depth + 1);
+    dump_indent(depth);
+    print(")\n");
+  } else {
+    IfStmt if_stmt = s.if_stmt;
+
+    print("(if\n");
+    dump_basic_if(if_stmt.if_part, depth + 1);
+
+    for (int i = 0; i < if_stmt.else_ifs.length; i = i + 1) {
+      dump_basic_if(if_stmt.else_ifs.items[i], depth + 1);
+    }
+
+    dump_indent(depth + 1);
+    print("(else\n");
+    dump_stmts(if_stmt.else_stmts, depth + 2);
+    dump_indent(depth + 1);
+    print(")\n");
+    dump_indent(depth);
+    print(")\n");
+  }
+}
+
+function void dump_basic_if(BasicIf basic_if, int depth) {
+  dump_indent(depth);
+  print("(branch ");
+  dump_expr(basic_if.condition);
+  print("\n");
+  dump_stmts(basic_if.stmts, depth + 1);
+  dump_indent(depth);
+  print(")\n");
+}
+
+function void dump_program(Program program) {
+  for (int i = 0; i < program.imports.length; i = i + 1) {
+    Import imp = program.imports.items[i];
+
+    print("(import ");
+    dump_quoted(imp.file_name);
+    print(" ");
+    dump_quoted(imp.namespace);
+    print(")\n");
+  }
+
+  for (int i = 0; i < program.struct_defs.length; i = i + 1) {
+    StructDef struct_def = program.struct_defs.items[i];
+
+    print("(struct ");
+    dump_token(struct_def.struct_name);
+    print(" ");
+    dump_var_defs(struct_def.fields);
+    print(")\n");
+  }
+
+  for (int i = 0; i < program.vdecl_stmts.length; i = i + 1) {
+    print("(global ");
+    dump_var_decl(program.vdecl_stmts.items[i]);
+    print(")\n");
+  }
+
+  for (int i = 0; i < program.fun_defs.length; i = i + 1) {
+    FunDef fun_def = program.fun_defs.items[i];
+
+    print("(fun ");
+    dump_bool(fun_def.should_export);
+    print(" ");
+    dump_quoted(fun_def.original_name);
+    print(" ");
+    dump_data_type(fun_def.return_type);
+    print(" ");
+    dump_token(fun_def.fun_name);
+    print(" ");
+    dump_var_defs(fun_def.params);
+    print("\n");
+    dump_stmts(fun_def.stmts, 1);
+    print(")\n");
+  }
+}

@@ -1,0 +1,408 @@
+// AST nodes, mirroring the classes in Compiler/types.ts. Classes with
+// subclasses (Stmt, RValue, ExprTerm) are a struct with a kind and one
+// field per variant, of which only the one matching the kind is set
+
+// Stmt kinds
+int STMT_VAR_DECL = 1;
+int STMT_ASSIGN = 2;
+int STMT_RETURN = 3;
+int STMT_WHILE = 4;
+int STMT_FOR = 5;
+int STMT_IF = 6;
+int STMT_DELETE = 7;
+int STMT_CALL = 8;
+
+// RValue kinds
+int RV_SIMPLE = 1;
+int RV_NEW = 2;
+int RV_VAR = 3;
+int RV_CALL = 4;
+
+// ExprTerm kinds
+int TERM_SIMPLE = 1;
+int TERM_COMPLEX = 2;
+
+struct DataType {
+  bool is_array;
+  Token type_name;
+  Token namespace;
+}
+
+struct VarDef {
+  DataType data_type;
+  Token var_name;
+}
+
+struct StructDef {
+  Token struct_name;
+  VarDefList fields;
+}
+
+struct FunDef {
+  DataType return_type;
+  Token fun_name;
+  VarDefList params;
+  StmtList stmts;
+  Text original_name;
+  bool should_export;
+}
+
+struct Import {
+  Text file_name;
+  Text namespace;
+}
+
+struct Expr {
+  bool not_op;
+  ExprTerm first;
+  Token op;
+  Expr rest;
+}
+
+// SimpleTerm (kind TERM_SIMPLE, rvalue) or ComplexTerm (TERM_COMPLEX, expr)
+struct ExprTerm {
+  int kind;
+  RValue rvalue;
+  Expr expr;
+}
+
+// SimpleRValue is just its token, kept in value
+struct RValue {
+  int kind;
+  Token value;
+  NewRValue new_rvalue;
+  VarRValue var_rvalue;
+  CallExpr call_expr;
+}
+
+struct CallExpr {
+  Token fun_name;
+  ExprList args;
+  Token namespace;
+  // True when the call is a statement, so its result is unused
+  bool is_stmt;
+}
+
+struct NewRValue {
+  Token type_name;
+  Expr array_expr;
+  ExprList struct_params;
+  Token namespace;
+}
+
+struct VarRef {
+  Token var_name;
+  Expr array_expr;
+}
+
+struct VarRValue {
+  VarRefList path;
+}
+
+// ReturnStmt is just its expression, kept in expr. DeleteStmt is just its
+// VarRValue, kept in delete_target
+struct Stmt {
+  int kind;
+  VarDecl var_decl;
+  AssignStmt assign_stmt;
+  Expr expr;
+  WhileStmt while_stmt;
+  ForStmt for_stmt;
+  IfStmt if_stmt;
+  VarRValue delete_target;
+  CallExpr call_expr;
+}
+
+struct VarDecl {
+  VarDef var_def;
+  Expr expr;
+}
+
+struct AssignStmt {
+  VarRefList lvalue;
+  Expr expr;
+}
+
+struct WhileStmt {
+  Expr condition;
+  StmtList stmts;
+}
+
+struct ForStmt {
+  VarDecl var_decl;
+  Expr condition;
+  AssignStmt assign_stmt;
+  StmtList stmts;
+}
+
+struct BasicIf {
+  Expr condition;
+  StmtList stmts;
+}
+
+struct IfStmt {
+  BasicIf if_part;
+  BasicIfList else_ifs;
+  StmtList else_stmts;
+}
+
+struct Program {
+  StructDefList struct_defs;
+  FunDefList fun_defs;
+  VarDeclList vdecl_stmts;
+  ImportList imports;
+}
+
+// Constructors for the variant structs
+
+function Stmt stmt_new(int kind) {
+  return new Stmt(kind, null, null, null, null, null, null, null, null);
+}
+
+function RValue rvalue_new(int kind) {
+  return new RValue(kind, null, null, null, null);
+}
+
+function ExprTerm simple_term(RValue rvalue) {
+  return new ExprTerm(TERM_SIMPLE, rvalue, null);
+}
+
+function ExprTerm complex_term(Expr expr) {
+  return new ExprTerm(TERM_COMPLEX, null, expr);
+}
+
+// Growable lists, one per element type since there are no generics
+
+struct VarDefList {
+  array VarDef items;
+  int length;
+}
+
+function VarDefList var_def_list_new() {
+  return new VarDefList(new VarDef[4], 0);
+}
+
+function void var_def_list_push(VarDefList list, VarDef item) {
+  if (list.length == length(list.items)) {
+    array VarDef old_items = list.items;
+    array VarDef new_items = new VarDef[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct StmtList {
+  array Stmt items;
+  int length;
+}
+
+function StmtList stmt_list_new() {
+  return new StmtList(new Stmt[4], 0);
+}
+
+function void stmt_list_push(StmtList list, Stmt item) {
+  if (list.length == length(list.items)) {
+    array Stmt old_items = list.items;
+    array Stmt new_items = new Stmt[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct ExprList {
+  array Expr items;
+  int length;
+}
+
+function ExprList expr_list_new() {
+  return new ExprList(new Expr[4], 0);
+}
+
+function void expr_list_push(ExprList list, Expr item) {
+  if (list.length == length(list.items)) {
+    array Expr old_items = list.items;
+    array Expr new_items = new Expr[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct VarRefList {
+  array VarRef items;
+  int length;
+}
+
+function VarRefList var_ref_list_new() {
+  return new VarRefList(new VarRef[4], 0);
+}
+
+function void var_ref_list_push(VarRefList list, VarRef item) {
+  if (list.length == length(list.items)) {
+    array VarRef old_items = list.items;
+    array VarRef new_items = new VarRef[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct BasicIfList {
+  array BasicIf items;
+  int length;
+}
+
+function BasicIfList basic_if_list_new() {
+  return new BasicIfList(new BasicIf[4], 0);
+}
+
+function void basic_if_list_push(BasicIfList list, BasicIf item) {
+  if (list.length == length(list.items)) {
+    array BasicIf old_items = list.items;
+    array BasicIf new_items = new BasicIf[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct StructDefList {
+  array StructDef items;
+  int length;
+}
+
+function StructDefList struct_def_list_new() {
+  return new StructDefList(new StructDef[4], 0);
+}
+
+function void struct_def_list_push(StructDefList list, StructDef item) {
+  if (list.length == length(list.items)) {
+    array StructDef old_items = list.items;
+    array StructDef new_items = new StructDef[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct FunDefList {
+  array FunDef items;
+  int length;
+}
+
+function FunDefList fun_def_list_new() {
+  return new FunDefList(new FunDef[4], 0);
+}
+
+function void fun_def_list_push(FunDefList list, FunDef item) {
+  if (list.length == length(list.items)) {
+    array FunDef old_items = list.items;
+    array FunDef new_items = new FunDef[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct VarDeclList {
+  array VarDecl items;
+  int length;
+}
+
+function VarDeclList var_decl_list_new() {
+  return new VarDeclList(new VarDecl[4], 0);
+}
+
+function void var_decl_list_push(VarDeclList list, VarDecl item) {
+  if (list.length == length(list.items)) {
+    array VarDecl old_items = list.items;
+    array VarDecl new_items = new VarDecl[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
+
+struct ImportList {
+  array Import items;
+  int length;
+}
+
+function ImportList import_list_new() {
+  return new ImportList(new Import[4], 0);
+}
+
+function void import_list_push(ImportList list, Import item) {
+  if (list.length == length(list.items)) {
+    array Import old_items = list.items;
+    array Import new_items = new Import[length(old_items) * 2];
+
+    for (int i = 0; i < list.length; i = i + 1) {
+      new_items[i] = old_items[i];
+    }
+
+    list.items = new_items;
+    delete old_items;
+  }
+
+  list.items[list.length] = item;
+  list.length = list.length + 1;
+}
