@@ -1,6 +1,13 @@
 import { Command } from "commander";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import * as Runtime from "./Runtime/index.ts";
 import * as Compiler from "./Compiler/index.ts";
+
+// The Rust runtime (make build-runtime-rust) is used when it's been built,
+// unless MYWASM_RUNTIME=bun
+const RUST_RUNTIME = path.join(__dirname, "Runtime-Rust/target/release/mywasm-run");
 
 const program = new Command();
 
@@ -45,8 +52,54 @@ program
       });
     }
 
+    if (process.env.MYWASM_RUNTIME !== "bun" && existsSync(RUST_RUNTIME)) {
+      runWithRustRuntime(input, wasmBuffer, memoryPages, config.debug === true, config.zeroOnDealloc === true);
+    }
+
     await Runtime.init(input, config.debug, wasmBuffer!, memoryPages, config.zeroOnDealloc === true, false);
   });
+
+// Runs the program with the Rust runtime and exits with its exit code
+function runWithRustRuntime(
+  input: string,
+  wasmBuffer: Uint8Array | undefined,
+  memoryPages: number,
+  debug: boolean,
+  zeroOnDealloc: boolean
+): never {
+  let wasmPath = input;
+  let workDir: string | undefined;
+
+  // A program compiled with --compile is passed in a temporary file
+  if (wasmBuffer !== undefined) {
+    workDir = mkdtempSync(path.join(tmpdir(), "mywasm-"));
+    wasmPath = path.join(workDir, "program.wasm");
+    writeFileSync(wasmPath, wasmBuffer);
+  }
+
+  const args = ["--memory", `${memoryPages * 64}K`];
+
+  if (debug) {
+    args.push("--debug");
+  }
+
+  if (zeroOnDealloc) {
+    args.push("--zero-on-dealloc");
+  }
+
+  try {
+    const result = Bun.spawnSync({
+      cmd: [RUST_RUNTIME, ...args, wasmPath],
+      stdio: ["inherit", "inherit", "inherit"],
+    });
+
+    process.exit(result.exitCode ?? 1);
+  } finally {
+    if (workDir !== undefined) {
+      rmSync(workDir, { recursive: true, force: true });
+    }
+  }
+}
 
 program.parse();
 

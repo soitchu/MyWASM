@@ -1,0 +1,91 @@
+// Merge sort where every merge allocates and frees its own halves, so it
+// makes about two allocations per merge
+
+function void merge(array int arr, int p, int q, int r) {
+  int n1 = q - p + 1;
+  int n2 = r - q;
+  array int L = new int[n1];
+  array int M = new int[n2];
+
+  for (int i = 0; i < n1; i = i + 1) {
+    L[i] = arr[p + i];
+  }
+
+  for (int j = 0; j < n2; j = j + 1) {
+    M[j] = arr[q + 1 + j];
+  }
+
+  int i = 0;
+  int j = 0;
+  int k = p;
+
+  while ((i < n1) and (j < n2)) {
+    if (L[i] <= M[j]) {
+      arr[k] = L[i];
+      i = i + 1;
+    } else {
+      arr[k] = M[j];
+      j = j + 1;
+    }
+
+    k = k + 1;
+  }
+
+  while (i < n1) {
+    arr[k] = L[i];
+    i = i + 1;
+    k = k + 1;
+  }
+
+  while (j < n2) {
+    arr[k] = M[j];
+    j = j + 1;
+    k = k + 1;
+  }
+
+  delete L;
+  delete M;
+}
+
+function void merge_sort(array int arr, int l, int r) {
+  if (l < r) {
+    int m = l + (r - l) / 2;
+
+    merge_sort(arr, l, m);
+    merge_sort(arr, m + 1, r);
+    merge(arr, l, m, r);
+  }
+}
+
+export function int main() {
+  int size = 1000000;
+  array int arr = new int[size];
+
+  // Deterministic pseudo-random values, so both runtimes sort the same data
+  int seed = 12345;
+
+  for (int i = 0; i < size; i = i + 1) {
+    seed = (seed * 1103515245 + 12345) % 2147483647;
+
+    if (seed < 0) {
+      seed = 0 - seed;
+    }
+
+    arr[i] = seed % 100000;
+  }
+
+  merge_sort(arr, 0, size - 1);
+
+  // Checks that the result is sorted
+  bool sorted = true;
+
+  for (int i = 1; i < size; i = i + 1) {
+    if (arr[i - 1] > arr[i]) {
+      sorted = false;
+    }
+  }
+
+  print(sorted);
+  print("\n");
+  delete arr;
+}

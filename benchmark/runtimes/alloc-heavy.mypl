@@ -1,0 +1,49 @@
+// Allocates and frees many structs and arrays of different sizes, keeping
+// some alive so freed memory is fragmented and gets reused and merged
+
+struct Node {
+  int value;
+  Node next;
+  array int data;
+}
+
+export function int main() {
+  int rounds = 200;
+  int per_round = 5000;
+  array Node kept = new Node[per_round];
+  int checksum = 0;
+
+  for (int round = 0; round < rounds; round = round + 1) {
+    Node list = null;
+
+    for (int i = 0; i < per_round; i = i + 1) {
+      Node node = new Node(i, list, new int[(i * 7 + round) % 23]);
+      list = node;
+
+      // Keep every third node alive until the next round replaces it
+      if (i % 3 == 0) {
+        Node old = kept[i];
+
+        if (old != null) {
+          array int old_data = old.data;
+          delete old_data;
+          delete old;
+        }
+
+        kept[i] = new Node(round, null, new int[i % 11]);
+      }
+    }
+
+    while (list != null) {
+      Node next = list.next;
+      array int data = list.data;
+      checksum = checksum + length(data);
+      delete data;
+      delete list;
+      list = next;
+    }
+  }
+
+  print(checksum);
+  print("\n");
+}

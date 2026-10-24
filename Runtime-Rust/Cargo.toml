@@ -1,0 +1,28 @@
+[package]
+name = "mywasm-runtime"
+version = "0.1.0"
+edition = "2024"
+description = "Runs MyWASM programs with Wasmtime"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "mywasm-run"
+path = "src/main.rs"
+
+# Runs allocations and frees through the memory manager, for testing it
+# against Runtime/MemoryManager.ts
+[[bin]]
+name = "alloc-driver"
+path = "src/bin/alloc_driver.rs"
+
+[dependencies]
+rustc-hash = "2"
+wasmtime = "=49.0.4"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1

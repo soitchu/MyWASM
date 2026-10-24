@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterAll, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 
 const workDir = mkdtempSync(path.join(tmpdir(), "piped-input-"));
 const INDEX = path.join(__dirname, "../../index.ts");
@@ -27,13 +27,20 @@ export function int main() {
 }
 `;
 
-function runWithStdin(stdin: string) {
+// run uses the Rust runtime when it's built, so both runtimes are tested
+const RUNTIMES: Record<string, Record<string, string>> = {
+  bun: { MYWASM_RUNTIME: "bun" },
+  default: {},
+};
+
+function runWithStdin(stdin: string, env: Record<string, string>) {
   const file = path.join(workDir, "echo.mypl");
   writeFileSync(file, ECHO_PROGRAM);
 
   const result = Bun.spawnSync({
     cmd: [process.execPath, INDEX, "run", "--compile", file],
     stdin: Buffer.from(stdin),
+    env: { ...process.env, ...env },
     timeout: 10_000,
   });
 
@@ -44,16 +51,20 @@ function runWithStdin(stdin: string) {
   return stdout.slice(stdout.lastIndexOf("}\n") + 2);
 }
 
-test("piped_input_reads_lines_until_eof", () => {
-  expect(runWithStdin('int a = "x";\n\n  // c\n')).toBe(
-    '[12]int a = "x";|[0]|[6]  // c|eof'
-  );
-});
+for (const [runtime, env] of Object.entries(RUNTIMES)) {
+  describe(runtime, () => {
+    test("piped_input_reads_lines_until_eof", () => {
+      expect(runWithStdin('int a = "x";\n\n  // c\n', env)).toBe(
+        '[12]int a = "x";|[0]|[6]  // c|eof'
+      );
+    });
 
-test("piped_input_without_trailing_newline", () => {
-  expect(runWithStdin("a\nbc")).toBe("[1]a|[2]bc|eof");
-});
+    test("piped_input_without_trailing_newline", () => {
+      expect(runWithStdin("a\nbc", env)).toBe("[1]a|[2]bc|eof");
+    });
 
-test("piped_input_empty", () => {
-  expect(runWithStdin("")).toBe("eof");
-});
+    test("piped_input_empty", () => {
+      expect(runWithStdin("", env)).toBe("eof");
+    });
+  });
+}
