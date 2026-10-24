@@ -140,6 +140,7 @@ export function deleteAVLNode(root: AVLNode | null, key: number): AVLNode | null
         } else {
             const temp = nodeWithMinimumValue(root.right);
             root.key = temp.key;
+            root.value = temp.value;
             root.right = deleteAVLNode(root.right, temp.key);
         }
     }
