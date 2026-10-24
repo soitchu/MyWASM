@@ -299,6 +299,17 @@ function generate_struct_functions(size: number, wasm_type: string) {
 
     local.get $value
     ${wasm_type}.store
+  )
+
+  (func \$${wasm_type}_init_struct_field (param $struct i32) (param $value ${wasm_type}) (param $index i32) (result i32)
+    local.get $struct
+    local.get $index
+    i32.add
+
+    local.get $value
+    ${wasm_type}.store
+
+    local.get $struct
   )`;
 }
 

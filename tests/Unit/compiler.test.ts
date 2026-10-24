@@ -1182,3 +1182,38 @@ test("discarded_double_and_struct_results", async () => {
 
   expect(result).toBe(7);
 });
+
+test("nested_struct_constructors", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    struct Node {
+      int value;
+      Node next;
+      int tag;
+    }
+
+    export function int test() {
+      Node n = new Node(1, new Node(2, new Node(3, null, 30), 20), 10);
+      return n.value + (n.tag * 10) + (n.next.value * 1000) + (n.next.tag * 10000) + (n.next.next.value * 1000000) + (n.next.next.tag * 10000000);
+    }
+  `);
+
+  // 1 + 10 * 10 + 2 * 1000 + 20 * 10000 + 3 * 1000000 + 30 * 10000000
+  expect(result).toBe(303202101);
+});
+
+test("nested_struct_constructor_with_double_field", async () => {
+  const [result, memory] = await runMyWASMCode(`
+    struct Pair {
+      double a;
+      Pair inner;
+      double b;
+    }
+
+    export function double test() {
+      Pair p = new Pair(1.5, new Pair(2.5, null, 3.5), 4.5);
+      return p.a + p.b + (p.inner.a * 10.0) + (p.inner.b * 100.0);
+    }
+  `);
+
+  expect(result).toBe(1.5 + 4.5 + 25 + 350);
+});

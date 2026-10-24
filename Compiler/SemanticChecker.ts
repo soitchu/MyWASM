@@ -1806,6 +1806,11 @@ export class SemanticChecker extends Visitor{
                 
                 for(let i = 0; i < params.length; i++){
                     const param = params[i]
+
+                    // The struct pointer is pushed before the field's value,
+                    // and init_struct_field returns it to restore $tmp, since
+                    // a nested struct constructor in the value overwrites $tmp
+                    this.output_in_new_line("local.get $tmp")
                     
                     this.curr_type = undefined
                     param.accept(this)
@@ -1819,12 +1824,9 @@ export class SemanticChecker extends Visitor{
                         )
                     }
 
-                    const size = WASM.getWASMSize(struct_fields[i].data_type)
-
-                    this.output_in_new_line("local.get $tmp")
                     this.output_in_new_line(`i32.const ${this.get_field_cummulative_size(struct_def, struct_fields[i].var_name.lexeme)}`)
-                    this.output_in_new_line(`call \$${WASM.getWASMType(curr_type.type_name, curr_type.is_array)}_assign_to_struct`)
-                
+                    this.output_in_new_line(`call \$${WASM.getWASMType(curr_type.type_name, curr_type.is_array)}_init_struct_field`)
+                    this.output_in_new_line("local.set $tmp")
                 }
 
                 this.output_in_new_line("local.get $tmp")
